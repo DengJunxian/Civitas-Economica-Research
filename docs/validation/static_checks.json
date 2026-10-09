@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "python_parsed": 212,
+  "original_data_files": {
+    "data/event_graph.graphml": true,
+    "data/event_store/history_replay_news/events/event_type=news/date=2026-03-10/events_9fd3fc4c3756285b.parquet": true,
+    "data/event_store/history_replay_news/events/event_type=news/date=2026-03-15/events_99ce89055e25d629.parquet": true,
+    "data/event_store/history_replay_news/scenarios/history_replay_news_3444395316a6.json": true,
+    "data/event_store/history_replay_news/scenarios/history_replay_news_c7ebd2904e07.json": true,
+    "data/event_store/history_replay_news/snapshots/20260410T164143Z_5f4251b8e83748f6/manifest.json": true,
+    "data/event_store/history_replay_news/snapshots/20260410T164144Z_ca7efb7cde63a8f4/manifest.json": true,
+    "data/event_store/market_environment_runtime/events/event_type=news/date=2026-05-25/events_ec6fb84528175d02.parquet": true,
+    "data/event_store/market_environment_runtime/events/event_type=policy/date=2026-05-25/events_ea4c004d81d2cb1e.parquet": true,
+    "data/graphs/graph_bench_00.graphml": true,
+    "data/graphs/graph_bench_01.graphml": true,
+    "data/graphs/graph_bench_02.graphml": true,
+    "data/graphs/graph_bench_03.graphml": true,
+    "data/graphs/graph_deep_00.graphml": true,
+    "data/graphs/graph_deep_01.graphml": true,
+    "data/graphs/graph_deep_02.graphml": true,
+    "data/graphs/graph_deep_03.graphml": true,
+    "data/history_news_cache.jsonl": true,
+    "data/market_composition.json": true,
+    "data/market_composition.yaml": true,
+    "data/policy_templates.json": true,
+    "data/seed_events.jsonl": true
+  },
+  "archive_manifests": "all files SHA256 matched",
+  "removed_module_imports": [],
+  "broken_document_links": [],
+  "final_run_source_matches_current": true,
+  "counts": {
+    "modified": 39,
+    "added": 42,
+    "deleted": 7,
+    "moved_unchanged": 25,
+    "unchanged": 195
+  }
+}

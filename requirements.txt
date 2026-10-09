@@ -1,0 +1,3 @@
+# Default installation is the headless research experiment service.
+-r requirements-core.txt
+# Optional: requirements-ui.txt, requirements-llm.txt, requirements-research.txt

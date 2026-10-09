@@ -1,0 +1,349 @@
+{
+  "$defs": {
+    "EventConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "step": {
+          "minimum": 1,
+          "title": "Step",
+          "type": "integer"
+        },
+        "kind": {
+          "enum": [
+            "panic",
+            "sentiment",
+            "halt",
+            "resume",
+            "tax_change"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "default": 0.0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "step",
+        "kind"
+      ],
+      "title": "EventConfig",
+      "type": "object"
+    },
+    "HistoricalInput": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "historical",
+            "synthetic_test",
+            "teaching_example",
+            "mock"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "origin",
+        "description"
+      ],
+      "title": "HistoricalInput",
+      "type": "object"
+    },
+    "LLMConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "default": "",
+          "title": "Model",
+          "type": "string"
+        },
+        "provider": {
+          "default": "deepseek",
+          "enum": [
+            "deepseek",
+            "zhipu"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "temperature": {
+          "default": 0.0,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "timeout": {
+          "default": 20.0,
+          "exclusiveMinimum": 0,
+          "maximum": 300,
+          "title": "Timeout",
+          "type": "number"
+        },
+        "max_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Max Calls",
+          "type": "integer"
+        },
+        "max_retries": {
+          "default": 0,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Max Retries",
+          "type": "integer"
+        }
+      },
+      "title": "LLMConfig",
+      "type": "object"
+    },
+    "MarketConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "symbol": {
+          "default": "A_SHARE_IDX",
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Symbol",
+          "type": "string"
+        },
+        "initial_price": {
+          "default": 3000.0,
+          "exclusiveMinimum": 0,
+          "title": "Initial Price",
+          "type": "number"
+        },
+        "price_limit": {
+          "default": 0.1,
+          "exclusiveMaximum": 1,
+          "exclusiveMinimum": 0,
+          "title": "Price Limit",
+          "type": "number"
+        },
+        "tick_size": {
+          "default": 0.01,
+          "exclusiveMinimum": 0,
+          "title": "Tick Size",
+          "type": "number"
+        },
+        "board_lot": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Board Lot",
+          "type": "integer"
+        },
+        "commission": {
+          "default": 0.00025,
+          "exclusiveMaximum": 0.1,
+          "minimum": 0,
+          "title": "Commission",
+          "type": "number"
+        },
+        "stamp_duty": {
+          "default": 0.0005,
+          "exclusiveMaximum": 0.1,
+          "minimum": 0,
+          "title": "Stamp Duty",
+          "type": "number"
+        },
+        "t_plus_one": {
+          "default": false,
+          "title": "T Plus One",
+          "type": "boolean"
+        },
+        "steps_per_day": {
+          "default": 100,
+          "minimum": 1,
+          "title": "Steps Per Day",
+          "type": "integer"
+        },
+        "order_ttl": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Order Ttl",
+          "type": "integer"
+        },
+        "backend": {
+          "default": "python",
+          "enum": [
+            "python",
+            "cpp"
+          ],
+          "title": "Backend",
+          "type": "string"
+        }
+      },
+      "title": "MarketConfig",
+      "type": "object"
+    },
+    "SocialConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "topology": {
+          "default": "small_world",
+          "enum": [
+            "small_world",
+            "ring",
+            "empty"
+          ],
+          "title": "Topology",
+          "type": "string"
+        },
+        "neighbors": {
+          "default": 6,
+          "minimum": 0,
+          "title": "Neighbors",
+          "type": "integer"
+        },
+        "rewire_probability": {
+          "default": 0.1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Rewire Probability",
+          "type": "number"
+        },
+        "beta": {
+          "default": 0.3,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Beta",
+          "type": "number"
+        },
+        "gamma": {
+          "default": 0.1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Gamma",
+          "type": "number"
+        },
+        "delta": {
+          "default": 0.05,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Delta",
+          "type": "number"
+        },
+        "initial_infected": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Initial Infected",
+          "type": "integer"
+        }
+      },
+      "title": "SocialConfig",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "name": {
+      "default": "minimal_market",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$",
+      "title": "Name",
+      "type": "string"
+    },
+    "mode": {
+      "default": "research",
+      "enum": [
+        "research",
+        "test",
+        "example"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "seed": {
+      "default": 42,
+      "exclusiveMaximum": 4294967296,
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "steps": {
+      "default": 30,
+      "maximum": 100000,
+      "minimum": 1,
+      "title": "Steps",
+      "type": "integer"
+    },
+    "n_agents": {
+      "default": 64,
+      "maximum": 100000,
+      "minimum": 2,
+      "title": "N Agents",
+      "type": "integer"
+    },
+    "decision_mode": {
+      "default": "vectorized",
+      "enum": [
+        "vectorized",
+        "profile_heuristic",
+        "llm",
+        "mock"
+      ],
+      "title": "Decision Mode",
+      "type": "string"
+    },
+    "market_regime": {
+      "default": "default",
+      "title": "Market Regime",
+      "type": "string"
+    },
+    "market": {
+      "$ref": "#/$defs/MarketConfig"
+    },
+    "social": {
+      "$ref": "#/$defs/SocialConfig"
+    },
+    "llm": {
+      "$ref": "#/$defs/LLMConfig"
+    },
+    "events": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/EventConfig"
+      },
+      "title": "Events",
+      "type": "array"
+    },
+    "historical_input": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HistoricalInput"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "ExperimentConfig",
+  "type": "object"
+}

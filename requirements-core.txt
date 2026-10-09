@@ -1,0 +1,6 @@
+# Headless experiments: no UI, model SDK, market feed, GPU or vector database.
+numpy>=1.24
+pandas>=2.0
+networkx>=3.0
+PyYAML>=6.0
+pydantic>=2.12

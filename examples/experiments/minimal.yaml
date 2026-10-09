@@ -1,0 +1,17 @@
+schema_version: 1
+name: minimal_market
+mode: research
+seed: 42
+steps: 30
+n_agents: 64
+decision_mode: vectorized
+market:
+  backend: python
+  initial_price: 3000.0
+  board_lot: 1
+  t_plus_one: false
+social:
+  topology: small_world
+  neighbors: 6
+  initial_infected: 0
+events: []

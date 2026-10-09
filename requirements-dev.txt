@@ -1,0 +1,4 @@
+-r requirements-ui.txt
+-r requirements-llm.txt
+pytest>=8.0
+mesa>=3.0

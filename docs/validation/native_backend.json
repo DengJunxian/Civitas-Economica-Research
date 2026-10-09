@@ -1,0 +1,11 @@
+{
+  "binary": "_civitas_lob.cpython-314-darwin.so",
+  "sha256": "2a19363d8e2eb3101dc0c10d00ba7d86228fe2ceebee01997628760169bc77b1",
+  "bytes": 879312,
+  "compiler": "Apple clang version 21.0.0 (clang-2100.0.123.102)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+  "sources": {
+    "core/exchange/c_core/bindings.cpp": "f2f26a06a66a2ea68523d3f4899d21025e6f2ba9874939743f0ff56a7709c796",
+    "core/exchange/c_core/lob.cpp": "472e8496b577759ba04308e3aa6f65387e1499d0fe5c73bf90f08ae1a7a202fa",
+    "core/exchange/c_core/lob.hpp": "5d4ab34dfe20a1e5da9f3f5a8144cb2c736af78859728d79a88c87f362fd660d"
+  }
+}

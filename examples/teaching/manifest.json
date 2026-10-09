@@ -1,0 +1,19 @@
+{
+  "origin": "teaching_example",
+  "description": "Preserved precomputed classroom scenarios; not a fresh simulation run or verified market dataset.",
+  "files": {
+    "README.md": "9c8f1e90ef3518e0ac712fee5260557c9903cff82df3c1ab47ed66ea2a362a07",
+    "rumor_panic_selloff/metrics.csv": "cb81b2ebdad32a18b68b1399726fd9da785a168973605fe113650984bb8558fc",
+    "rumor_panic_selloff/initial_config.yaml": "bd73d47648f7567425e894b56ac3bc564341ff1ce95bebef56918b4854d4f1ac",
+    "rumor_panic_selloff/narration.json": "fa4e31306aa02c5d833812ae953a81b1b4239e050865338221a45a2e42bb9d12",
+    "rumor_panic_selloff/analyst_manager_output.json": "3f814722e92fbc90bdc64aa0f41ee420a4dddcdc4f0f49e9a30ff1e2215c585f",
+    "regulator_stabilization_intervention/metrics.csv": "d59050c56b67a5f6b4347d8b3ad3cd920465f719245591c99a332c753fc9e9f9",
+    "regulator_stabilization_intervention/initial_config.yaml": "43aa610d91ceb1dec885fb1ad50508fb6e44562bf723133c103bef77efb137c3",
+    "regulator_stabilization_intervention/narration.json": "b7751981733f980c4a10d47a3504188aa67b14214313e36d0af5c1a848a437bc",
+    "regulator_stabilization_intervention/analyst_manager_output.json": "ed8317f4b715ecc9390d4b9534d1bbf7e0bf3c2bdc26759d212bf1c6739f780f",
+    "tax_cut_liquidity_boost/metrics.csv": "c41e7de2c27e69fbc4be57eba537e0d49a226620a3849b5d4573fcc05f5e5c3c",
+    "tax_cut_liquidity_boost/initial_config.yaml": "bcc0c5cecf239c64bb3205dbf29f560604d01e6116a36ab2a9d71c801f88532d",
+    "tax_cut_liquidity_boost/narration.json": "af782c69741cd9c6a76b62cc4fec27649643cf44f80a4996c6c1452fd7250c95",
+    "tax_cut_liquidity_boost/analyst_manager_output.json": "2bc15af2e2ebbaf4f45cdfd629503e43f36e2c8182f44dcac99677fdeb61ff00"
+  }
+}

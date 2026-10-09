@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "environment": "requirements-core.txt only",
+  "run": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/core_dependency_validation/minimal_market-20261009T083125-2bdde8ca01",
+  "integrity": {
+    "run_id": "minimal_market-20261009T083125-2bdde8ca01",
+    "checked_files": 16,
+    "status": "verified"
+  },
+  "excluded_imports": [
+    "streamlit",
+    "mesa",
+    "openai",
+    "httpx",
+    "scipy",
+    "chromadb"
+  ]
+}

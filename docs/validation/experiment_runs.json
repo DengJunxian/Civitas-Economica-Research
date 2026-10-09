@@ -1,0 +1,286 @@
+{
+  "purpose": "offline engineering verification, not scientific inference",
+  "runs": [
+    {
+      "path": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/minimal_market-20261009T082806-3e03b2dc6a",
+      "name": "minimal_market",
+      "seed": 41,
+      "agents": 64,
+      "steps": 30,
+      "backend": "python",
+      "status": "completed",
+      "trade_count": 184,
+      "total_volume": 1433,
+      "final_price": 2739.64,
+      "max_cash_residual": 9.313225746154785e-10,
+      "integrity": {
+        "run_id": "minimal_market-20261009T082806-3e03b2dc6a",
+        "checked_files": 16,
+        "status": "verified"
+      },
+      "source_hash": "e247654ce29931f020aa813a410bb48baccb44e930e5b2aba5dbe04f00bfe8e1",
+      "artifacts": {
+        "population.json": "1078e15c8c517d3f0f4f2d59cb89540799fe2401f192364dd1f28c1de5b4cd1b",
+        "world.json": "12d1991c9603ab04e60986049a5f33c2163ff3c44e1a08cc79ea934e297965c8",
+        "metrics.csv": "e5da5d0ddc78d548071fa6ac1d8cd0a982e0b96d300f14424577e21f8dd28b16",
+        "agents.csv": "f8ce3239d07e38c6955bc41f01c13bbb68f1eebce8f1468558774a9c9f5b5f8e",
+        "trades.csv": "d792b0de8ab9ec08d50befb1f3ceaa41656cf92f46d45d1d3abd4fc35d28d44e",
+        "orders.csv": "0c9077e3f28cd6a1569541a0818f5eede407844d904fa8abc268c4c6d5519dba",
+        "order_events.csv": "988b4e1487ab7119c8559b6a96b0282c0727e121c5ac46d6dffa330692af7159",
+        "decisions.csv": "cdf2d4928cd18ff185c8adf86efa29fd650f6d5fc4cb29f961c2f944f9e999dc",
+        "social.csv": "d65a063aecb5b494b799bfdc3717ecb8c43a2baedb6c89e0612a0494fe1dfb1d",
+        "events.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "model_calls.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    {
+      "path": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/minimal_market-20261009T082809-5812e3bc9d",
+      "name": "minimal_market",
+      "seed": 42,
+      "agents": 64,
+      "steps": 30,
+      "backend": "python",
+      "status": "completed",
+      "trade_count": 179,
+      "total_volume": 1190,
+      "final_price": 2719.38,
+      "max_cash_residual": 9.313225746154785e-10,
+      "integrity": {
+        "run_id": "minimal_market-20261009T082809-5812e3bc9d",
+        "checked_files": 16,
+        "status": "verified"
+      },
+      "source_hash": "e247654ce29931f020aa813a410bb48baccb44e930e5b2aba5dbe04f00bfe8e1",
+      "artifacts": {
+        "population.json": "2a3fa0373940aa81f07b011a8bf40d218bf32bb91a956e3cea73eeefe56e6ccf",
+        "world.json": "ac56ac580e01c1998b1cd63bbf3aaddd72a2430cb46471e78636d5124ea028a8",
+        "metrics.csv": "a6f0ad8844e444204722d9ea2cec29140d176d9163349f933fd7374e8bf7101a",
+        "agents.csv": "0d75d6469e1a386c9759ab12502f84a65c662513ffbd27aae6137f207149c48a",
+        "trades.csv": "f9507218796ad2b7457f6a10c746e28501edf6db0e343b9f25e0b5439acaf405",
+        "orders.csv": "faf25a74558792936c849ce5eb40a140f714d1f9de3a8e5576cd405ae4f2353e",
+        "order_events.csv": "babeedabb1eea0d4fa2cb36bfe1fe61e2d55d15a37bcebebb02c984d2e51f5ee",
+        "decisions.csv": "288aef08011b37d7be1b6cf752ceb2615f44d0a06f6844efd515941a3089e571",
+        "social.csv": "d65a063aecb5b494b799bfdc3717ecb8c43a2baedb6c89e0612a0494fe1dfb1d",
+        "events.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "model_calls.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    {
+      "path": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/minimal_market-20261009T082813-0e571a1891",
+      "name": "minimal_market",
+      "seed": 43,
+      "agents": 64,
+      "steps": 30,
+      "backend": "python",
+      "status": "completed",
+      "trade_count": 188,
+      "total_volume": 1850,
+      "final_price": 2740.03,
+      "max_cash_residual": 1.862645149230957e-09,
+      "integrity": {
+        "run_id": "minimal_market-20261009T082813-0e571a1891",
+        "checked_files": 16,
+        "status": "verified"
+      },
+      "source_hash": "e247654ce29931f020aa813a410bb48baccb44e930e5b2aba5dbe04f00bfe8e1",
+      "artifacts": {
+        "population.json": "e2c2a69179e1a34c90d857ddb124f33e3b9991620fbf7a4b5f33dc20143cbda7",
+        "world.json": "f2279cc790d17b3c5be5eb4176511ec9194085a887582b6c41599e55af76a6f2",
+        "metrics.csv": "e68a7f724916a32d87cc9d8d30cffbcc1fc967cc39776dbe6596360e660ba95c",
+        "agents.csv": "ca060bc3585a9113dccabb742018ca2994fb416dd4af4cc4164686652847f535",
+        "trades.csv": "4cb33556160d7293944a47c1d987dace9eb255f5f98f083646c17c810fbf1cdf",
+        "orders.csv": "d17f0edaaf2e43818a452913539e08f64d7a20fd6b6c3222c29362f6a838fa39",
+        "order_events.csv": "c52aff1decc4070b1515a5642a25472cfdbea0288864ddbe4dfd3e93749bd2b1",
+        "decisions.csv": "57ac102068cd910e4e19e712f3570769f9b421ba1bdf0ebb5dd679b83f286fdc",
+        "social.csv": "d65a063aecb5b494b799bfdc3717ecb8c43a2baedb6c89e0612a0494fe1dfb1d",
+        "events.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "model_calls.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    {
+      "path": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/panic_intervention-20261009T082817-6cb6575503",
+      "name": "panic_intervention",
+      "seed": 41,
+      "agents": 64,
+      "steps": 30,
+      "backend": "python",
+      "status": "completed",
+      "trade_count": 184,
+      "total_volume": 1424,
+      "final_price": 2749.19,
+      "max_cash_residual": 9.313225746154785e-10,
+      "integrity": {
+        "run_id": "panic_intervention-20261009T082817-6cb6575503",
+        "checked_files": 16,
+        "status": "verified"
+      },
+      "source_hash": "e247654ce29931f020aa813a410bb48baccb44e930e5b2aba5dbe04f00bfe8e1",
+      "artifacts": {
+        "population.json": "1078e15c8c517d3f0f4f2d59cb89540799fe2401f192364dd1f28c1de5b4cd1b",
+        "world.json": "12d1991c9603ab04e60986049a5f33c2163ff3c44e1a08cc79ea934e297965c8",
+        "metrics.csv": "6837d28e7cf8c17b6f10e660da3b1995d1e66bc3430bc334b9aaa842e16268df",
+        "agents.csv": "ddc3d7d3a895299d943dbc4076329eeab092f0e0b188553b3eba0eca8c045214",
+        "trades.csv": "2b8e22dcf0bb938cdc144d29d3e645e47df8aa8e07c848f601aacb47b2fa760b",
+        "orders.csv": "9792fa52b6ae1f07bbdf02578c6d9729c12db81a7d2bfc6bbc7e8721ec8ed181",
+        "order_events.csv": "4e8b027561ad0989a9f4a143f7bcadfa4f2c403eaab3d5da198b17b81d869c95",
+        "decisions.csv": "27f0d2ee05df5cef093abb186b8f33b443d11a7c22702a59658282270f4d5740",
+        "social.csv": "7730dd2b3c41080c2e1c44129785272a9db60611292aef8cfd55e04eef312842",
+        "events.jsonl": "23e46b7844fdcd44c05cc9d53d96967c58d352cd66f23bebe0fb1503016dc41a",
+        "model_calls.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    {
+      "path": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/panic_intervention-20261009T082820-050f1378c0",
+      "name": "panic_intervention",
+      "seed": 42,
+      "agents": 64,
+      "steps": 30,
+      "backend": "python",
+      "status": "completed",
+      "trade_count": 185,
+      "total_volume": 1225,
+      "final_price": 2753.06,
+      "max_cash_residual": 0.0,
+      "integrity": {
+        "run_id": "panic_intervention-20261009T082820-050f1378c0",
+        "checked_files": 16,
+        "status": "verified"
+      },
+      "source_hash": "e247654ce29931f020aa813a410bb48baccb44e930e5b2aba5dbe04f00bfe8e1",
+      "artifacts": {
+        "population.json": "2a3fa0373940aa81f07b011a8bf40d218bf32bb91a956e3cea73eeefe56e6ccf",
+        "world.json": "ac56ac580e01c1998b1cd63bbf3aaddd72a2430cb46471e78636d5124ea028a8",
+        "metrics.csv": "b4a99c1d4a2bb7e0f4adb532dc27064331e600c5b5af53389c1ccc586592d5cc",
+        "agents.csv": "b92d344f9e6a584357a27bb5d368585920985445cc345ee02b3d3a280bf9312e",
+        "trades.csv": "8039ba09655e28e77813960448bc070bf72fb15e96ce783c39b87da36608526f",
+        "orders.csv": "d3857c129608c6f612d3ca9a9a7cb0011601ae19d8a83ce57386b7169c0534b4",
+        "order_events.csv": "3f3eec1c4226be64a09f81dbbd8b7f8470bebb699e88ac4a8c81cec14495099c",
+        "decisions.csv": "f35bde4be5e9333211b0b50e02f0b811e127191a421e6912b7be1158d6821470",
+        "social.csv": "b22b0a094ab00c6048bbde9a638417716df2b7d2ae119ba885a3d57f69959510",
+        "events.jsonl": "cc949683d3c20d538659e0351c39ebbd65fd7c5ab58b690e1d2749e9e438d3c4",
+        "model_calls.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    {
+      "path": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/panic_intervention-20261009T082823-afff13d7af",
+      "name": "panic_intervention",
+      "seed": 43,
+      "agents": 64,
+      "steps": 30,
+      "backend": "python",
+      "status": "completed",
+      "trade_count": 188,
+      "total_volume": 1834,
+      "final_price": 2746.47,
+      "max_cash_residual": 1.862645149230957e-09,
+      "integrity": {
+        "run_id": "panic_intervention-20261009T082823-afff13d7af",
+        "checked_files": 16,
+        "status": "verified"
+      },
+      "source_hash": "e247654ce29931f020aa813a410bb48baccb44e930e5b2aba5dbe04f00bfe8e1",
+      "artifacts": {
+        "population.json": "e2c2a69179e1a34c90d857ddb124f33e3b9991620fbf7a4b5f33dc20143cbda7",
+        "world.json": "f2279cc790d17b3c5be5eb4176511ec9194085a887582b6c41599e55af76a6f2",
+        "metrics.csv": "255b7549f88755cdfa5e393078776d78ca7834bda1a20424b4a877666f45e032",
+        "agents.csv": "94fb6389024329ad4dcee743e28941a75ca0979156a4014ffe0d2e6eb52875ea",
+        "trades.csv": "1f78490f61a3c5f635c95d28cc3508eada2faeb0b46c0ebf257cb6d7b1d2e2fe",
+        "orders.csv": "7180671fcc76e4d96c5a2224c6e6773351c2643a1e18793a5ade8f3b8ed4b430",
+        "order_events.csv": "6aead43c5b1c66229a308314cb435f2dc09eebcaabf5ab925de067a0245c2242",
+        "decisions.csv": "a9c89204f326b33db47656c812ceb776e4e18661d917904578d26f9533c6d229",
+        "social.csv": "40e1f2602c5676e707e822ef1c419066af7e6cbc5143a0edda63212d181105da",
+        "events.jsonl": "ac9eb84b6a829e93ac922ad84e107420c1e678f9543f5ebb01de169bccd5ef55",
+        "model_calls.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    {
+      "path": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/native/minimal_market-20261009T082830-f6bcda08ef",
+      "name": "minimal_market",
+      "seed": 42,
+      "agents": 64,
+      "steps": 30,
+      "backend": "cpp",
+      "status": "completed",
+      "trade_count": 179,
+      "total_volume": 1190,
+      "final_price": 2719.38,
+      "max_cash_residual": 9.313225746154785e-10,
+      "integrity": {
+        "run_id": "minimal_market-20261009T082830-f6bcda08ef",
+        "checked_files": 16,
+        "status": "verified"
+      },
+      "source_hash": "e247654ce29931f020aa813a410bb48baccb44e930e5b2aba5dbe04f00bfe8e1",
+      "artifacts": {
+        "population.json": "2a3fa0373940aa81f07b011a8bf40d218bf32bb91a956e3cea73eeefe56e6ccf",
+        "world.json": "ac56ac580e01c1998b1cd63bbf3aaddd72a2430cb46471e78636d5124ea028a8",
+        "metrics.csv": "a6f0ad8844e444204722d9ea2cec29140d176d9163349f933fd7374e8bf7101a",
+        "agents.csv": "0d75d6469e1a386c9759ab12502f84a65c662513ffbd27aae6137f207149c48a",
+        "trades.csv": "f9507218796ad2b7457f6a10c746e28501edf6db0e343b9f25e0b5439acaf405",
+        "orders.csv": "faf25a74558792936c849ce5eb40a140f714d1f9de3a8e5576cd405ae4f2353e",
+        "order_events.csv": "babeedabb1eea0d4fa2cb36bfe1fe61e2d55d15a37bcebebb02c984d2e51f5ee",
+        "decisions.csv": "288aef08011b37d7be1b6cf752ceb2615f44d0a06f6844efd515941a3089e571",
+        "social.csv": "d65a063aecb5b494b799bfdc3717ecb8c43a2baedb6c89e0612a0494fe1dfb1d",
+        "events.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "model_calls.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    }
+  ],
+  "reproduction": {
+    "status": "matched",
+    "compared_files": 11,
+    "rerun": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/reproductions/minimal_market-20261009T082826-8c2b0c1a46"
+  },
+  "native_parity": {
+    "status": "matched",
+    "compared_files": 11,
+    "python": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/minimal_market-20261009T082809-5812e3bc9d",
+    "cpp": "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/native/minimal_market-20261009T082830-f6bcda08ef"
+  },
+  "commands": [
+    {
+      "argv": [
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/.venv-check/bin/python",
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/main.py",
+        "batch",
+        "--config",
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/examples/experiments/minimal.yaml",
+        "--config",
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/examples/experiments/panic.yaml",
+        "--seeds",
+        "41,42,43",
+        "--output",
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 20.003891625005053
+    },
+    {
+      "argv": [
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/.venv-check/bin/python",
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/main.py",
+        "reproduce",
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/minimal_market-20261009T082809-5812e3bc9d",
+        "--output",
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/reproductions"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.8430830000143033
+    },
+    {
+      "argv": [
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/.venv-check/bin/python",
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/main.py",
+        "run",
+        "--config",
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/cpp_config.json",
+        "--output",
+        "/Users/DengJunxian/Documents/ChatGPT/civitas/Civitas-Economica-Demo-main 2/outputs/engineering_validation/batch-275a81a56343/native"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 4.0156316659995355
+    }
+  ],
+  "live_llm_calls": 0,
+  "external_market_requests": 0
+}

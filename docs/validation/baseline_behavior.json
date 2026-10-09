@@ -1,0 +1,12 @@
+{
+  "maker_price_bug": {
+    "expected": 100,
+    "actual": 101
+  },
+  "empty_ioc_status": "pending",
+  "implicit_fallback": {
+    "provider": "synthetic",
+    "rows": 365
+  },
+  "population_initial_hash": "65568a0643d31d28d430b854e21631b855717021c7dae142fa5bfd5bd8717bf9"
+}
