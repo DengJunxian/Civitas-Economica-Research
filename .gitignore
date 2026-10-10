@@ -60,6 +60,7 @@ _agent/
 .venv-check/
 
 .venv-core-check/
+.venv-replay/
 
 # Local credentials and publication working files
 .env.*

@@ -6,13 +6,18 @@
 
 ## 最小可运行实验
 
-Python 3.11+，在本目录执行：
+Python 3.11+。从公开仓库获取源码后，在项目根目录执行：
 
 ```sh
+git clone https://github.com/DengJunxian/Civitas-Economica-Research.git
+cd Civitas-Economica-Research
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-core.txt
 .venv/bin/python main.py validate --config examples/experiments/minimal.yaml
-.venv/bin/python main.py run --config examples/experiments/minimal.yaml
+RUN_DIR="$(.venv/bin/python main.py run --config examples/experiments/minimal.yaml)"
+echo "$RUN_DIR"
+.venv/bin/python main.py verify "$RUN_DIR"
+.venv/bin/python main.py reproduce "$RUN_DIR"
 ```
 
 该配置运行 64 个 Agent、30 个时间步。每步实际计算传播与决策、提交订单、撮合和结算；无成交时沿用最后成交价、成交量为零。没有预置价格路径，没有 API 调用，不要求 Streamlit。终端会输出独立的运行目录。
@@ -21,11 +26,11 @@ python3 -m venv .venv
 
 ```sh
 .venv/bin/python main.py batch --config examples/experiments/minimal.yaml --config examples/experiments/panic.yaml --seeds 41,42,43
-.venv/bin/python main.py verify outputs/experiments/<run-id>
-.venv/bin/python main.py reproduce outputs/experiments/<run-id>
+.venv/bin/python main.py verify "$RUN_DIR"
+.venv/bin/python main.py reproduce "$RUN_DIR"
 ```
 
-`batch` 按配置与种子组合运行；每个子实验保留独立 manifest。`verify` 校验已归档文件；`reproduce` 重新执行本地规则实验并比较数值与状态文件。含实时 LLM 的实验不承诺确定性，不允许该命令自动再次调用模型。
+`batch` 按配置与种子组合运行；每个子实验保留独立 manifest。`verify` 校验文件哈希、配置/种子/初始快照身份及完成状态；`reproduce` 重新执行本地规则实验并比较 11 个数值与状态文件，将父运行、逐文件哈希、代码/环境差异及匹配状态写入新运行的 `reproduction.json`。含实时 LLM 的实验不承诺确定性，不允许该命令自动再次调用模型。
 
 完整参数、事件和数据协议见 [实验指南](docs/EXPERIMENTS.md)；机器配置 schema 见 [experiment_config.schema.json](docs/experiment_config.schema.json)。
 
@@ -51,7 +56,7 @@ ExperimentManifest + config/source/data hashes
 
 ## 输出
 
-每次运行目录包含配置、统一 manifest、代码指纹和环境版本、初始世界与画像，以及 metrics.csv、agents.csv、decisions.csv、orders.csv、order_events.csv、trades.csv、social.csv、events.jsonl、model_calls.json、run.log 和 summary.json。失败保留已完成数据、error.log 和失败状态，不冒充成功结果。字段定义与单位见 [实验指南](docs/EXPERIMENTS.md)。
+每次运行目录包含配置、统一 manifest、代码指纹、环境版本及 `requirements-lock.txt`、初始世界与画像，以及 metrics.csv、agents.csv、decisions.csv、orders.csv、order_events.csv、trades.csv、social.csv、events.jsonl、model_calls.json、run.log 和 summary.json。失败保留已完成数据、error.log 和失败状态，不冒充成功结果。字段定义、依赖恢复方法及归档版本兼容性见 [实验指南](docs/EXPERIMENTS.md)。
 
 来源显式区分 historical、simulation、synthetic_test、teaching_example 和 mock。带 SHA256 的历史输入用于初始化时，后续撮合价格仍是 simulation。真实行情失败默认报错；合成数据必须明确选择。examples/teaching 内的预编排 CSV 和 examples/legacy_presentation 内的旧展示资源仅作教学/历史资产，标准运行不读取它们。
 
@@ -80,13 +85,22 @@ ExperimentManifest + config/source/data hashes
 .venv/bin/python -m pytest -q
 ```
 
-测试禁止联网，覆盖 Agent/Social/Market/Simulation、确定性重跑、失败归档、CLI、可选 UI、IPC、Mesa 初始化以及可选 C++ 一致性。未编译 C++ 时相关测试明确 skip。GitHub Actions 配置已加入；远程 CI 状态需在推送后确认。
+测试禁止联网，覆盖 Agent/Social/Market/Simulation、确定性重跑、失败归档、CLI、可选 UI、IPC、Mesa 初始化以及可选 C++ 一致性。未编译 C++ 时相关测试明确 skip。
+
+核心依赖环境可独立执行 README 全流程检查，保存 CLI 回执、结果数量、现金/持仓守恒和复现报告：
+
+```sh
+.venv/bin/python scripts/verify_minimal_experiment.py
+```
+
+该检查在独立进程中阻止网络连接。CI 分别执行核心依赖检查与含可选模块/C++ 的完整测试，并上传归档与回执。当前运行状态见 [GitHub Actions](https://github.com/DengJunxian/Civitas-Economica-Research/actions/workflows/tests.yml)。
 
 - [审查与修改清单](docs/REFACTOR_AUDIT.md)
 - [架构与模块状态](docs/ARCHITECTURE.md)
 - [运行及输出协议](docs/EXPERIMENTS.md)
 - [旧配置与接口迁移](docs/MIGRATION.md)
 - [本轮验证记录](docs/VALIDATION.md)
+- [公开仓库干净环境验证](docs/CLEAN_ENV_VALIDATION.md)
 
 ## 研究边界
 

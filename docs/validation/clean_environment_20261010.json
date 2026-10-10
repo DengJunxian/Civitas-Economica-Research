@@ -1,0 +1,362 @@
+{
+  "validation_date": "2026-10-10",
+  "clone": "anonymous HTTPS clone of public repository",
+  "baseline_git_commit": "1f86e3aac680b2e3785ee360bcb7c25d1e598a3c",
+  "baseline_git_dirty": false,
+  "working_tree_git_commit": "1f86e3aac680b2e3785ee360bcb7c25d1e598a3c",
+  "working_tree_git_dirty": true,
+  "source_hash": "d014a34fc296a48f303762d909942c4f22e7c69649985e63cd1ada9166cca262",
+  "config_hash": "daa2c59536975b4cfd7b9cd2882cc84a7b6ba3344f6713f57eba38e9562a2bfe",
+  "config": {
+    "decision_mode": "vectorized",
+    "events": [],
+    "historical_input": null,
+    "llm": {
+      "max_calls": 0,
+      "max_retries": 0,
+      "model": "",
+      "provider": "deepseek",
+      "temperature": 0.0,
+      "timeout": 20.0
+    },
+    "market": {
+      "backend": "python",
+      "board_lot": 1,
+      "commission": 0.00025,
+      "initial_price": 3000.0,
+      "order_ttl": 1,
+      "price_limit": 0.1,
+      "stamp_duty": 0.0005,
+      "steps_per_day": 100,
+      "symbol": "A_SHARE_IDX",
+      "t_plus_one": false,
+      "tick_size": 0.01
+    },
+    "market_regime": "default",
+    "mode": "research",
+    "n_agents": 64,
+    "name": "minimal_market",
+    "schema_version": 1,
+    "seed": 42,
+    "social": {
+      "beta": 0.3,
+      "delta": 0.05,
+      "gamma": 0.1,
+      "initial_infected": 0,
+      "neighbors": 6,
+      "rewire_probability": 0.1,
+      "topology": "small_world"
+    },
+    "steps": 30
+  },
+  "environment": {
+    "backend": {
+      "name": "python"
+    },
+    "installed_packages": {
+      "PyYAML": "6.0.3",
+      "annotated-types": "0.8.0",
+      "networkx": "3.7",
+      "numpy": "2.5.3",
+      "pandas": "3.0.6",
+      "pip": "26.2.1",
+      "pydantic": "2.14.0",
+      "pydantic_core": "2.50.0",
+      "python-dateutil": "2.9.0.post0",
+      "six": "1.17.0",
+      "typing-inspection": "0.4.4",
+      "typing_extensions": "4.16.0"
+    },
+    "packages": {
+      "networkx": "3.7",
+      "numpy": "2.5.3",
+      "pandas": "3.0.6",
+      "pydantic": "2.14.0",
+      "pyyaml": "6.0.3"
+    },
+    "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+    "python": "3.14.7"
+  },
+  "results": {
+    "final_price": 2719.38,
+    "max_cash_conservation_residual": 9.313225746154785e-10,
+    "model_calls": 0,
+    "output_origin": "simulation",
+    "row_counts": {
+      "agents": 1984,
+      "decisions": 1920,
+      "metrics": 30,
+      "order_events": 2878,
+      "orders": 1593,
+      "social": 30,
+      "trades": 179
+    },
+    "total_shares": 36035,
+    "trade_count": 179
+  },
+  "network_blocked_in_automated_experiment_subprocesses": true,
+  "baseline_commands": [
+    {
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "pip",
+        "check"
+      ],
+      "exit_code": 0,
+      "seconds": 0.1869351863861084
+    },
+    {
+      "command": [
+        ".venv/bin/python",
+        "main.py",
+        "validate",
+        "--config",
+        "examples/experiments/minimal.yaml"
+      ],
+      "exit_code": 0,
+      "seconds": 12.68513822555542
+    },
+    {
+      "command": [
+        ".venv/bin/python",
+        "main.py",
+        "run",
+        "--config",
+        "examples/experiments/minimal.yaml"
+      ],
+      "exit_code": 0,
+      "seconds": 4.232052803039551
+    },
+    {
+      "command": [
+        ".venv/bin/python",
+        "main.py",
+        "verify",
+        "outputs/experiments/minimal_market-20261010T024422-0af008eac5"
+      ],
+      "exit_code": 0,
+      "seconds": 0.4093818664550781
+    },
+    {
+      "command": [
+        ".venv/bin/python",
+        "main.py",
+        "reproduce",
+        "outputs/experiments/minimal_market-20261010T024422-0af008eac5"
+      ],
+      "exit_code": 0,
+      "seconds": 4.3880250453948975
+    }
+  ],
+  "fixed_commands": [
+    {
+      "argv": [
+        "main.py",
+        "validate",
+        "--config",
+        "examples/experiments/minimal.yaml"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "main.py",
+        "run",
+        "--config",
+        "examples/experiments/minimal.yaml",
+        "--output",
+        "outputs/clean-validation/check-37450baea40f/experiments"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "main.py",
+        "verify",
+        "outputs/clean-validation/check-37450baea40f/experiments/minimal_market-20261010T025112-de06d9f457"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "main.py",
+        "reproduce",
+        "outputs/clean-validation/check-37450baea40f/experiments/minimal_market-20261010T025112-de06d9f457",
+        "--output",
+        "outputs/clean-validation/check-37450baea40f/reproductions"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "main.py",
+        "verify",
+        "outputs/clean-validation/check-37450baea40f/reproductions/minimal_market-20261010T025116-41739a70ee"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "archive_artifacts": {
+    "agents.csv": {
+      "bytes": 246622,
+      "sha256": "0d75d6469e1a386c9759ab12502f84a65c662513ffbd27aae6137f207149c48a"
+    },
+    "config.json": {
+      "bytes": 849,
+      "sha256": "3910cf9196ab3ba20e5bc50e483dd221c33c997e3cafa80eae8616eab7176ee1"
+    },
+    "decisions.csv": {
+      "bytes": 100451,
+      "sha256": "288aef08011b37d7be1b6cf752ceb2615f44d0a06f6844efd515941a3089e571"
+    },
+    "environment.json": {
+      "bytes": 612,
+      "sha256": "7def167587a26429c2a212b2f4659fb247368d3c111b8328c8614a5ece0653e3"
+    },
+    "events.jsonl": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "metrics.csv": {
+      "bytes": 5084,
+      "sha256": "a6f0ad8844e444204722d9ea2cec29140d176d9163349f933fd7374e8bf7101a"
+    },
+    "model_calls.json": {
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "order_events.csv": {
+      "bytes": 105525,
+      "sha256": "babeedabb1eea0d4fa2cb36bfe1fe61e2d55d15a37bcebebb02c984d2e51f5ee"
+    },
+    "orders.csv": {
+      "bytes": 136469,
+      "sha256": "faf25a74558792936c849ce5eb40a140f714d1f9de3a8e5576cd405ae4f2353e"
+    },
+    "population.json": {
+      "bytes": 350660,
+      "sha256": "2a3fa0373940aa81f07b011a8bf40d218bf32bb91a956e3cea73eeefe56e6ccf"
+    },
+    "requirements-lock.txt": {
+      "bytes": 221,
+      "sha256": "25d4fd9c2a77130e7c5531f4b0da13559a545230be994e7e83cf4875ef812282"
+    },
+    "run.log": {
+      "bytes": 1589,
+      "sha256": "ae370b7ab161a794f8e651fc19bdb44f714ace79f73cc692623fef65307b5816"
+    },
+    "social.csv": {
+      "bytes": 927,
+      "sha256": "d65a063aecb5b494b799bfdc3717ecb8c43a2baedb6c89e0612a0494fe1dfb1d"
+    },
+    "source.json": {
+      "bytes": 19759,
+      "sha256": "7608744552d430d7978ad7b6bd4aa09cf98eafc56397d2fd73bcd4c8080bbe29"
+    },
+    "summary.json": {
+      "bytes": 664,
+      "sha256": "0b5e6e4be17b07256ced2e742fad2a822493e28c767f83941ef3170e57cb4d33"
+    },
+    "trades.csv": {
+      "bytes": 29522,
+      "sha256": "f9507218796ad2b7457f6a10c746e28501edf6db0e343b9f25e0b5439acaf405"
+    },
+    "world.json": {
+      "bytes": 49194,
+      "sha256": "ac56ac580e01c1998b1cd63bbf3aaddd72a2430cb46471e78636d5124ea028a8"
+    }
+  },
+  "baseline_vs_fixed": {
+    "population.json": {
+      "baseline_sha256": "2a3fa0373940aa81f07b011a8bf40d218bf32bb91a956e3cea73eeefe56e6ccf",
+      "fixed_sha256": "2a3fa0373940aa81f07b011a8bf40d218bf32bb91a956e3cea73eeefe56e6ccf",
+      "matched": true
+    },
+    "world.json": {
+      "baseline_sha256": "ac56ac580e01c1998b1cd63bbf3aaddd72a2430cb46471e78636d5124ea028a8",
+      "fixed_sha256": "ac56ac580e01c1998b1cd63bbf3aaddd72a2430cb46471e78636d5124ea028a8",
+      "matched": true
+    },
+    "metrics.csv": {
+      "baseline_sha256": "a6f0ad8844e444204722d9ea2cec29140d176d9163349f933fd7374e8bf7101a",
+      "fixed_sha256": "a6f0ad8844e444204722d9ea2cec29140d176d9163349f933fd7374e8bf7101a",
+      "matched": true
+    },
+    "agents.csv": {
+      "baseline_sha256": "0d75d6469e1a386c9759ab12502f84a65c662513ffbd27aae6137f207149c48a",
+      "fixed_sha256": "0d75d6469e1a386c9759ab12502f84a65c662513ffbd27aae6137f207149c48a",
+      "matched": true
+    },
+    "trades.csv": {
+      "baseline_sha256": "f9507218796ad2b7457f6a10c746e28501edf6db0e343b9f25e0b5439acaf405",
+      "fixed_sha256": "f9507218796ad2b7457f6a10c746e28501edf6db0e343b9f25e0b5439acaf405",
+      "matched": true
+    },
+    "orders.csv": {
+      "baseline_sha256": "faf25a74558792936c849ce5eb40a140f714d1f9de3a8e5576cd405ae4f2353e",
+      "fixed_sha256": "faf25a74558792936c849ce5eb40a140f714d1f9de3a8e5576cd405ae4f2353e",
+      "matched": true
+    },
+    "order_events.csv": {
+      "baseline_sha256": "babeedabb1eea0d4fa2cb36bfe1fe61e2d55d15a37bcebebb02c984d2e51f5ee",
+      "fixed_sha256": "babeedabb1eea0d4fa2cb36bfe1fe61e2d55d15a37bcebebb02c984d2e51f5ee",
+      "matched": true
+    },
+    "decisions.csv": {
+      "baseline_sha256": "288aef08011b37d7be1b6cf752ceb2615f44d0a06f6844efd515941a3089e571",
+      "fixed_sha256": "288aef08011b37d7be1b6cf752ceb2615f44d0a06f6844efd515941a3089e571",
+      "matched": true
+    },
+    "social.csv": {
+      "baseline_sha256": "d65a063aecb5b494b799bfdc3717ecb8c43a2baedb6c89e0612a0494fe1dfb1d",
+      "fixed_sha256": "d65a063aecb5b494b799bfdc3717ecb8c43a2baedb6c89e0612a0494fe1dfb1d",
+      "matched": true
+    },
+    "events.jsonl": {
+      "baseline_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "fixed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matched": true
+    },
+    "model_calls.json": {
+      "baseline_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "fixed_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "matched": true
+    }
+  },
+  "reproduction": {
+    "compared_files": 11,
+    "environment_differences": [],
+    "report": "outputs/clean-validation/check-37450baea40f/reproductions/minimal_market-20261010T025116-41739a70ee/reproduction.json",
+    "rerun": "outputs/clean-validation/check-37450baea40f/reproductions/minimal_market-20261010T025116-41739a70ee",
+    "source_matches": true,
+    "status": "matched"
+  },
+  "dependency_restore": {
+    "status": "matched",
+    "compared_files": 11,
+    "rerun": "outputs/dependency-restore/minimal_market-20261010T025339-75895d1a52",
+    "report": "outputs/dependency-restore/minimal_market-20261010T025339-75895d1a52/reproduction.json",
+    "source_matches": true,
+    "environment_differences": []
+  },
+  "tests": {
+    "python": "3.12.13",
+    "cpp_extension_built": true,
+    "junit": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "78",
+        "time": "26.182",
+        "timestamp": "2026-10-10T10:52:48.536952+08:00",
+        "hostname": "Jensens-MacBook-Air.local"
+      }
+    ],
+    "warnings": [
+      "Mesa seed keyword is deprecated; use rng"
+    ]
+  }
+}

@@ -79,8 +79,9 @@ class ExperimentRunner:
     executions (or the last price carried forward when there are no trades).
     """
 
-    def __init__(self, config: ExperimentConfig):
+    def __init__(self, config: ExperimentConfig, *, parent_run_id: str = ""):
         self.config = config
+        self.parent_run_id = parent_run_id
         self.llm_router = None
 
     def _initialize(self, output: Path):
@@ -230,8 +231,10 @@ class ExperimentRunner:
         self.output_dir = output
         manifest = ExperimentManifest.build(module="market_experiment", seed=cfg.seed,
             dataset_snapshot_id="initializing", config=cfg.model_dump(mode="json"), run_id=run_id,
+            parent_run_id=self.parent_run_id,
             model_version=cfg.llm.model if cfg.decision_mode == "llm" else cfg.decision_mode,
             notes={"status": "running", "output": str(output), "schema_version": 1,
+                   "archive_schema_version": 2,
                    "output_origin": "mock" if cfg.decision_mode == "mock" else "simulation",
                    "determinism": "external_model_nondeterministic" if cfg.decision_mode == "llm" else "seeded_local_rules"})
         write_experiment_manifest(manifest, output)
@@ -245,6 +248,10 @@ class ExperimentRunner:
             if cfg.decision_mode == "llm":
                 packages.extend(["openai", "httpx"])
             versions = {p: importlib.metadata.version(p) for p in packages}
+            installed = dict(sorted((d.metadata["Name"], d.version)
+                                    for d in importlib.metadata.distributions() if d.metadata["Name"]))
+            (output / "requirements-lock.txt").write_text(
+                "".join(f"{name}=={version}\n" for name, version in installed.items()), encoding="utf-8")
             backend = {"name": cfg.market.backend}
             if cfg.market.backend == "cpp":
                 spec = importlib.util.find_spec("_civitas_lob")
@@ -252,7 +259,8 @@ class ExperimentRunner:
                     raise ImportError("Requested C++ backend is not built")
                 backend.update(binary=Path(spec.origin).name,
                                sha256=hashlib.sha256(Path(spec.origin).read_bytes()).hexdigest())
-            write_json(output / "environment.json", {"python": platform.python_version(), "platform": platform.platform(), "packages": versions, "backend": backend})
+            write_json(output / "environment.json", {"python": platform.python_version(), "platform": platform.platform(),
+                       "packages": versions, "installed_packages": installed, "backend": backend})
             initial = self._initialize(output)
             identity_config = cfg.model_dump(mode="json")
             if identity_config["historical_input"]:
@@ -260,6 +268,7 @@ class ExperimentRunner:
             initialized = ExperimentManifest.build(module="market_experiment", seed=cfg.seed,
                 dataset_snapshot_id=stable_hash(initial), config=identity_config,
                 run_id=run_id, timestamp=manifest.timestamp, git_commit=manifest.git_commit,
+                parent_run_id=self.parent_run_id,
                 notes={**manifest.notes, "source_hash": source["sha256"], "git_dirty": source["git_dirty"]},
                 model_version=manifest.model_version)
             manifest = initialized
