@@ -1,0 +1,31 @@
+# Course knowledge point -> scenario map (plan v1.0, section 04).
+# Titles and knowledge points are proposed designs pending teacher review.
+# `engine` is the capability the scenario needs; only single_asset_orderbook
+# scenarios can run today. A spec file in scenarios/ is required to run.
+- {id: EXP-01, title: 双边订单簿与成交价格形成, module: E1, courses: ["107349", "214822", "101560"], phase: P1, engine: single_asset_orderbook, status: 标准内核+UI}
+- {id: EXP-02, title: 价差、深度与流动性不足, module: E1, courses: ["107349", "214822"], phase: P1, engine: single_asset_orderbook, status: 标准内核+指标语义}
+- {id: EXP-03, title: 交易成本与成交策略, module: E1, courses: ["107349", "107429"], phase: P2, engine: single_asset_orderbook, status: 补充决策实验}
+- {id: EXP-04, title: 风险偏好与投资者行为差异, module: E2, courses: ["107429", "214820"], phase: P2, engine: single_asset_orderbook, status: 暴露画像控制}
+- {id: EXP-05, title: 恐慌冲击与羊群传播, module: E2, courses: ["108272", "107429", "107349", "214822"], phase: P1, engine: single_asset_orderbook, status: 事件对照}
+- {id: EXP-06, title: 网络拓扑与传播差异, module: E2, courses: ["108272", "107452"], phase: P1, engine: single_asset_orderbook, status: 拓扑对照}
+- {id: EXP-07, title: 停牌、复牌与市场预期, module: E1, courses: ["107349", "214822"], phase: P1, engine: single_asset_orderbook, status: 事件对照}
+- {id: EXP-08, title: 印花税调整与交易行为, module: E1, courses: ["107349", "214822"], phase: P1, engine: single_asset_orderbook, status: 事件对照}
+- {id: EXP-09, title: 复合事件及政策交互效应, module: E1/E2, courses: ["107349", "103213"], phase: P1, engine: single_asset_orderbook, status: 场景组合器}
+- {id: EXP-10, title: 多种子实验与随机性分析, module: E7, courses: ["103213", "102927"], phase: P1, engine: single_asset_orderbook, status: 统计可视化}
+- {id: EXP-11, title: LLM 与规则交易者的决策对照, module: E7, courses: ["214830", "214834"], phase: P2, engine: llm_evaluation, status: 新评价协议}
+- {id: EXP-12, title: 不对称信息与信号博弈, module: E2, courses: ["108272"], phase: P2, engine: information_mechanism, status: 新信息机制}
+- {id: EXP-13, title: 多资产分散化与市场共振, module: E3, courses: ["107429", "214820"], phase: P2, engine: multi_asset, status: 多资产内核}
+- {id: EXP-14, title: 投资组合再平衡与风险预算, module: E3, courses: ["214835", "107454"], phase: P2, engine: portfolio, status: 组合/约束引擎}
+- {id: EXP-15, title: 净现值与企业投资竞争, module: E5, courses: ["107340", "214828"], phase: P2, engine: firm_finance, status: 企业模型}
+- {id: EXP-16, title: 财务冲击、杠杆与偿债能力, module: E5, courses: ["214831", "107340"], phase: P2, engine: firm_finance, status: 财务账本}
+- {id: EXP-17, title: 利率变化、债券价格与久期, module: E6, courses: ["107435", "250235"], phase: P2, engine: bond_valuation, status: 估值计算引擎}
+- {id: EXP-18, title: 衍生品与风险对冲, module: E6, courses: ["108270", "214827"], phase: P3, engine: derivatives, status: 衍生工具模块}
+- {id: EXP-19, title: 存款、信用创造与银行账本, module: E4, courses: ["102502"], phase: P3, engine: bank_ledger, status: 银行账本模型}
+- {id: EXP-20, title: 银行挤兑与流动性链, module: E4, courses: ["102502", "107443"], phase: P3, engine: bank_ledger, status: 银行—储户交互}
+- {id: EXP-21, title: 政策利率、信贷与宏观传导, module: E4, courses: ["101562", "102502"], phase: P3, engine: macro_closure, status: 宏观闭合模型}
+- {id: EXP-22, title: 财政支出与总需求变化, module: E4, courses: ["102041", "101562"], phase: P3, engine: fiscal, status: 财政主体模型}
+- {id: EXP-23, title: 共同持仓与基金网络风险, module: E3, courses: ["107454", "108441"], phase: P3, engine: fund_network, status: 多资产+机构网络}
+- {id: EXP-24, title: 客户画像与智能投顾风险适配, module: E3, courses: ["214835"], phase: P3, engine: wealth_advisory, status: 财富管理场景}
+- {id: EXP-25, title: 平台金融中的网络外部性, module: E2/E4, courses: ["214832"], phase: P3, engine: platform_two_sided, status: 平台双边市场}
+- {id: EXP-26, title: 汇率冲击与跨境传导, module: E4, courses: ["107470"], phase: P3, engine: open_economy, status: 开放经济模块}
+- {id: EXP-27, title: 事件研究与模型比较, module: E7, courses: ["102927", "214829"], phase: P2, engine: research_statistics, status: 研究统计工具}

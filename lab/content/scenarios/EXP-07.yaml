@@ -1,0 +1,53 @@
+spec_version: "0.1"
+scenario_id: EXP-07
+version: 0.1.0
+title: 暂停交易能停止恐慌吗？
+module: E1
+phase: P1
+course_codes: ["107349", "214822", "107449"]
+levels: [undergraduate, graduate]
+question: 恐慌冲击后停牌三步再复牌，交易、情绪传播与价格会怎样？
+objectives:
+  - 能区分交易中断、价格记录与风险消除
+  - 能用停牌期间的卖出决策（意图）说明"没有成交"不等于"没有负面预期"
+  - 能比较复牌后成交与未停牌组的差异
+assumptions:
+  - 两组都在第 8 步注入 8 个恐慌种子；停牌组第 15 步停牌、第 18 步复牌
+  - 停牌时撤销全部有效订单，停牌期间不接受新订单，但传播与决策照常计算
+limitations:
+  - 停牌期间价格曲线平坦是因为沿用最后成交价，不代表波动风险下降
+  - 模型没有集合竞价复牌、涨跌停板联动或监管沟通
+  - 结果只代表该模型、参数与种子集合，不能推出现实监管措施的效果
+evidence:
+  - 停牌期间零成交、零订单提交（订单默认存活 1 步，停牌前的挂单在每步开始时已按到期撤销，故停牌撤单数通常为 0）
+  - 停牌期间感染人数与卖出决策仍在变化
+  - 复牌后的成交量与价格
+world:
+  type: single_asset_orderbook
+  agents: 64
+  steps: 30
+  initial_price: 3000.0
+  decision_mode: vectorized
+  social: {topology: small_world, neighbors: 6}
+comparison:
+  pairing: matched_seed
+  seeds: [41, 42, 43, 44, 45]
+  reference_group: B
+  groups:
+    - id: B
+      label: 恐慌组
+      events:
+        - {step: 8, kind: panic, value: 8}
+    - id: C
+      label: 恐慌 + 停牌组
+      events:
+        - {step: 8, kind: panic, value: 8}
+        - {step: 15, kind: halt}
+        - {step: 18, kind: resume}
+observables: [price, volume, halted, infected, decisions, orders]
+outcome:
+  primary: max_drawdown
+  secondary: [zero_volume_steps, sell_decision_rate, peak_infected, return_volatility, final_return]
+source_policy: {required_origin: simulation, allow_teaching_example_as_run: false}
+approval: {require_teacher_confirmation: true}
+review: {status: pending_teacher_review}

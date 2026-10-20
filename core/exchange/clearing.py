@@ -32,13 +32,22 @@ class ClearingHouse:
         self.t_plus_one = t_plus_one
         self.fees = 0.0
         self.orders: dict[str, Order] = {}
+        # Same insertion order as self.orders, minus orders already in a terminal
+        # state (they never become active again). Avoids rescanning the full order
+        # history on every reservation check.
+        self._open: dict[str, Order] = {}
         self.initial_cash = math.fsum(a.cash for a in accounts.values())
         self.initial_shares = sum(a.shares for a in accounts.values())
 
+    def _record(self, order: Order) -> None:
+        self.orders[order.order_id] = order
+        self._open[order.order_id] = order
+
     def active_orders(self, agent_id: str | None = None):
-        return [o for o in self.orders.values() if
-                o.status in {OrderStatus.PENDING, OrderStatus.PARTIAL} and o.remaining_qty > 0
-                and (agent_id is None or o.agent_id == agent_id)]
+        for order_id in [k for k, o in self._open.items() if o.status not in {OrderStatus.PENDING, OrderStatus.PARTIAL}]:
+            del self._open[order_id]
+        return [o for o in self._open.values() if
+                o.remaining_qty > 0 and (agent_id is None or o.agent_id == agent_id)]
 
     def available(self, agent_id: str) -> tuple[float, int]:
         account = self.accounts[agent_id]
@@ -54,7 +63,7 @@ class ClearingHouse:
             raise ValueError(f"Duplicate order_id: {order.order_id}")
         # Normalize once before reserving cash: MARKET prices become price-limit bounds.
         if not self.book._preprocess_order(order):
-            self.orders[order.order_id] = order
+            self._record(order)
             return []
         reason = ""
         if order.agent_id not in self.accounts:
@@ -71,9 +80,9 @@ class ClearingHouse:
                     reason = "self-cross prevention"
         if reason:
             order.status, order.reason = OrderStatus.REJECTED, reason
-            self.orders[order.order_id] = order
+            self._record(order)
             return []
-        self.orders[order.order_id] = order
+        self._record(order)
         trades = self.book.add_order(order)
         for trade in trades:
             buyer = self.accounts[trade.buyer_agent_id]

@@ -1,0 +1,51 @@
+spec_version: "0.1"
+scenario_id: EXP-02
+version: 0.1.0
+title: 为什么市场会流动性不足？
+module: E1
+phase: P1
+course_codes: ["107349", "214822"]
+levels: [undergraduate, graduate]
+question: 负面情绪冲击后，挂单深度、成交率与价差是否可定义会发生什么变化？
+objectives:
+  - 能用深度、零成交步与价差不可定义步描述流动性，而不是只看价格
+  - 能区分"没有成交"和"市场没有风险"
+  - 能说明流动性变化来自投资者订单，而不是预设的做市商撤退
+assumptions:
+  - 冲击以全体投资者情绪 -0.6 的一次性 sentiment 事件编码
+  - 标准模型没有做市商主体，流动性完全来自合成投资者的限价单
+limitations:
+  - 不预设做市商撤退；没有做市商库存、报价义务或延迟
+  - 深度只统计前 5 档挂单；订单默认存活 1 步，深度是步末快照
+  - 结果只代表该模型、参数与种子集合
+evidence:
+  - 买卖盘深度（depth_bid / depth_ask）随时间变化
+  - 零成交步数与价差不可定义步数
+  - 订单提交、拒绝（资金或可卖持仓不足）与撤销
+world:
+  type: single_asset_orderbook
+  agents: 64
+  steps: 30
+  initial_price: 3000.0
+  decision_mode: vectorized
+  social: {topology: small_world, neighbors: 6}
+comparison:
+  pairing: matched_seed
+  seeds: [41, 42, 43, 44, 45]
+  reference_group: A
+  groups:
+    - id: A
+      label: 正常市场
+      events: []
+    - id: S
+      label: 情绪冲击
+      description: 第 10 步全体情绪 -0.6
+      events:
+        - {step: 10, kind: sentiment, value: -0.6}
+observables: [price, volume, depth, spread, orders, sentiment]
+outcome:
+  primary: undefined_spread_steps
+  secondary: [zero_volume_steps, cumulative_volume, rejected_orders]
+source_policy: {required_origin: simulation, allow_teaching_example_as_run: false}
+approval: {require_teacher_confirmation: true}
+review: {status: pending_teacher_review}

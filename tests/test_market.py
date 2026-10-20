@@ -122,6 +122,26 @@ def test_cancel_releases_resources_and_no_short_sell():
     c.check_invariants()
 
 
+def test_active_order_index_matches_full_scan():
+    c = ClearingHouse(book(), {"a": Account(1000, 10), "b": Account(1000, 10)})
+
+    def full_scan(agent=None):
+        return [o for o in c.orders.values() if o.status in {OrderStatus.PENDING, OrderStatus.PARTIAL}
+                and o.remaining_qty > 0 and (agent is None or o.agent_id == agent)]
+
+    steps = [lambda: c.submit(make("b1", qty=3, price=99, agent="a")),
+             lambda: c.submit(make("b2", qty=2, price=98, agent="a")),
+             lambda: c.submit(make("s1", "sell", qty=4, price=99, agent="b")),  # fills b1, rests 1
+             lambda: c.submit(make("bad", "sell", qty=50, agent="b")),          # rejected
+             lambda: c.cancel("b2"),
+             lambda: c.submit(make("b3", qty=1, price=99, agent="a"))]          # fills s1 remainder
+    for step in steps:
+        step()
+        assert c.active_orders() == full_scan()
+        assert all(c.active_orders(agent) == full_scan(agent) for agent in ("a", "b"))
+    assert c.active_orders() == []
+
+
 @pytest.mark.skipif(importlib.util.find_spec("_civitas_lob") is None, reason="optional C++ kernel not built")
 def test_cpp_python_parity():
     from core.exchange.order_book_cpp import OrderBookCPP
