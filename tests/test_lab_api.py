@@ -58,6 +58,11 @@ def test_catalog_endpoints(client):
     assert "硕士" in client.get("/v1/lessons/LESSON-MKT-005/worksheet", params={"level": "graduate"}).text
     assert "负结果讨论" in client.get("/v1/lessons/LESSON-BEH-002/guide").text
     assert client.get("/v1/lessons/LESSON-NOPE-001").status_code == 404
+    pdf = client.get("/v1/lessons/LESSON-MKT-004/worksheet", params={"level": "graduate", "format": "pdf"})
+    assert pdf.headers["content-type"] == "application/pdf" and pdf.content.startswith(b"%PDF")
+    assert client.get("/v1/scenarios/EXP-08/card", params={"format": "docx"}).status_code == 422
+    assert "审查记录" in client.get("/v1/lessons/LESSON-MKT-001/pilot-record").text
+    assert "保留期限" in client.get("/v1/lessons/LESSON-MKT-001/feedback-form").text
 
 
 def test_validate_reports_gate_result(client):

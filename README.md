@@ -69,7 +69,7 @@ ExperimentManifest + config/source/data hashes
 .venv/bin/python main.py lab run EXP-07 --confirm 张老师
 ```
 
-AI 教学席（`main.py lab draft` / `lab explain`）只生成须经门禁和教师确认的场景草案，以及只引用证据卡数值的解释。协议、门禁规则与覆盖范围见 [Civitas Lab 教学层](docs/LAB.md)；HTTP API（`uvicorn lab.api:app`）、课堂包与材料导出见 [API 与课堂材料](docs/lab/API.md)；模型行为与基线结果见 [基线审计](docs/lab/BASELINE_AUDIT_2026-10-20.md)。
+AI 教学席（`main.py lab draft` / `lab explain`）只生成须经门禁和教师确认的场景草案，以及只引用证据卡数值的解释。协议、门禁规则与覆盖范围见 [Civitas Lab 教学层](docs/LAB.md)；HTTP API（`uvicorn lab.api:app`）、课堂包与材料导出见 [API 与课堂材料](docs/lab/API.md)；模型行为与基线结果见 [基线审计](docs/lab/BASELINE_AUDIT_2026-10-20.md)；断网一键技术验收为 `.venv/bin/python scripts/lab_acceptance.py`，记录见 [验收记录](docs/lab/ACCEPTANCE_2026-10-20.md)。
 
 ## 可选功能
 

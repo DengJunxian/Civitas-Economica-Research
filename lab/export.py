@@ -180,3 +180,44 @@ def evidence_report(root: str | Path, metrics: list[str] | None = None) -> str:
         FOOTER,
     ]
     return "\n\n".join(parts)
+
+
+def pilot_record(lesson: LessonSpec, catalog: Catalog) -> str:
+    """Classroom pilot record (plan 9.2): timing, failures, outputs and teacher review (gate G3)."""
+    stages = [[s.name, f"{s.end_min - s.start_min} 分", "", "", ""] for s in lesson.stages]
+    return "\n\n".join([
+        f"# 课堂试点记录表 · {lesson.lesson_id} {lesson.title}",
+        f"课堂包版本 {lesson.version} · 计划 {lesson.duration_minutes} 分钟 · {REVIEW[lesson.review.status]}",
+        _table(["项目", "记录"], [["课程与层级", ""], ["日期", ""], ["班级匿名编号", ""], ["参与学生数", ""],
+                                ["授课教师", ""], ["观察员", ""], ["课前准备时间（分钟）", ""]]),
+        "## 实验运行\n\n" + _table(["实验", "comparison_id", "运行成功/总数", "归档校验", "备注"],
+                                  [[sid, "", "", "", ""] for sid in lesson.scenarios]),
+        "## 课堂用时与中断\n\n" + _table(["阶段", "计划用时", "实际用时", "系统异常或中断", "处理方式"], stages),
+        "## 学生产出统计（匿名汇总）\n\n" + _table(["指标", "人数/份数", "说明"], [
+            ["提交课前预测", "", ""], ["选择了关键变量或干预", "", ""], ["引用实际运行证据（含 run_id）", "", ""],
+            ["给出机制解释", "", ""], ["写出至少一条模型局限", "", ""], ["结果与预测不一致但能用证据解释", "", "不应扣分"]]),
+        "## 教师评价\n\n" + _table(["维度", "评价（1–5）", "说明"], [
+            ["与本课教学目标的匹配", "", ""], ["术语与难度是否合适", "", ""], ["图表与解释是否准确", "", ""],
+            ["课堂时间是否可控", "", ""], ["再次使用的意愿", "", ""]]),
+        "## 需要修改的内容\n\n&nbsp;\n",
+        "## 审查记录\n\n" + _table(["审查人", "角色", "结论（通过/修改后通过/不通过）", "日期", "签字"], [["", "", "", "", ""]] * 2),
+        "> 记录只汇总匿名计数，不填写学生姓名或学号；无法随机分组时，不作“平台导致成绩提升”的因果声明。",
+    ])
+
+
+def student_feedback(lesson: LessonSpec, catalog: Catalog) -> str:
+    """Anonymous student form (plan 9.2, 10.3); concept test items are left to the course teacher."""
+    likert = ["我清楚本课的研究问题", "我能把价格变化对应到具体的订单或成交", "我能区分模型结果与真实市场",
+              "我能说出至少一条模型限制", "平台操作没有妨碍我理解内容", "课堂时间安排合适"]
+    return "\n\n".join([
+        f"# 学生反馈问卷（匿名） · {lesson.title}",
+        "**告知**：本问卷用于改进课程与评估教学效果，只以匿名汇总形式呈现给授课教师和课程团队，"
+        "不影响成绩。请不要填写姓名、学号或其他可识别信息。保留期限：________（由课程负责人填写）。",
+        "课程内匿名编号：________　□ 课前　□ 课后",
+        "## 概念测验\n\n由授课教师按本课教学目标编写；课前与课后使用同构但不同题面的题目，并包含至少一道迁移题。\n\n"
+        + _bullets(f"目标 {i}：{objective}" for i, objective in enumerate(lesson.objectives, start=1)),
+        "## 课堂体验（1 = 非常不同意，5 = 非常同意）\n\n" + _table(["陈述", "1", "2", "3", "4", "5"],
+                                                         [[item, "□", "□", "□", "□", "□"] for item in likert]),
+        "## 开放问题\n\n**本课中对你最有帮助的一条证据是什么？**\n\n&nbsp;\n\n**你仍然困惑的地方是什么？**\n\n&nbsp;\n",
+        FOOTER,
+    ])

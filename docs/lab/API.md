@@ -29,7 +29,9 @@
 | `GET /v1/registry` | 观测量、结果指标定义与逐步列 | |
 | `GET /v1/lessons` / `{id}` | 课堂包列表与 LessonSpec | |
 | `GET /v1/lessons/{id}/guide` | 教师指导卡（Markdown） | |
-| `GET /v1/lessons/{id}/worksheet?level=` | 本科/硕士学生工作纸（Markdown） | 只要求课程内匿名编号 |
+| `GET /v1/lessons/{id}/worksheet?level=` | 本科/硕士学生工作纸 | 只要求课程内匿名编号 |
+| `GET /v1/lessons/{id}/pilot-record` | 课堂试点记录表（规划 9.2：用时、中断、匿名产出统计、教师评价、审查签字） | |
+| `GET /v1/lessons/{id}/feedback-form` | 匿名学生反馈问卷（告知用途、可见范围与保留期限；概念测验题由授课教师编写） | 不收集姓名学号 |
 | `POST /v1/experiments` | 创建对照实验任务 | 门禁拒绝 422（附报告）；缺确认 403；可选令牌 |
 | `GET /v1/experiments/{job_id}` | 任务状态与进度 | |
 | `GET /v1/comparisons` / `{id}` | 对照归档列表与 lab manifest | id 只接受安全字符，且必须位于归档根目录下 |
@@ -74,7 +76,9 @@
 
 EXP-06 与 EXP-08 的课堂包按模型实际结果设计：前者讨论"恐慌几乎不扩散时，网络差异为何很小"，后者讨论"费用下降而成交不变说明税率只进入结算通道"。它们不承诺模型给不出的效果。
 
-`lab/export.py` 生成 Markdown 材料：课题卡、教师指导卡、分层学生工作纸、证据报告；Streamlit 的课程中心、场景实验室和对照分析页提供对应下载。证据报告只读取对照归档，每个数值都能对应到 run_id，并附复核命令。PDF 导出尚未实现。
+`lab/export.py` 生成 Markdown 材料：课题卡、教师指导卡、分层学生工作纸、证据报告、试点记录表、学生反馈问卷；Streamlit 的课程中心、场景实验室和对照分析页提供对应下载，侧栏可切换 Markdown/PDF。证据报告只读取对照归档，每个数值都能对应到 run_id，并附复核命令。
+
+所有返回课堂材料的接口（课题卡、指导卡、工作纸、试点记录表、反馈问卷、证据报告）都接受 `?format=pdf`。PDF 由 `lab/pdf.py` 按同一份 Markdown 渲染，中文使用 reportlab 自带的 STSong-Light CID 字体（不需要字体文件；该字体缺少的 `·`、`−` 分别替换为 `｜`、`-`）；未安装 reportlab 时接口返回 501。
 
 ## 内容版本与回归
 

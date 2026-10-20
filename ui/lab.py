@@ -19,7 +19,7 @@ from lab.capability import (OTHER_UNSUPPORTED_EVENTS, PLANNED_EVENTS, SUPPORTED_
                             CapabilityReport, check_scenario)
 from lab.catalog import load_catalog
 from lab.compare import comparison_frames, evidence_card, factorial_interaction, group_summary, load_scenario_of, paired_differences
-from lab.export import evidence_report, scenario_card, teacher_guide, worksheet
+from lab.export import evidence_report, pilot_record, scenario_card, student_feedback, teacher_guide, worksheet
 from lab.observables import OBSERVABLES, OUTCOMES, STEP_COLUMNS
 from lab.service import list_comparisons, load_manifest, run_scenario, verify_comparison
 from lab.specs import ScenarioSpec
@@ -68,8 +68,27 @@ def _run_confirmed(spec: ScenarioSpec, teacher: str, output_root: Path) -> None:
     st.session_state["lab_comparison"] = str(root)
 
 
+def _handout_format() -> str:
+    """One sidebar choice per page run; applies to every handout download on the page."""
+    return st.sidebar.radio("课堂材料格式", ["Markdown", "PDF"], horizontal=True, key="handout_format")
+
+
+def _handout(column, label: str, text: str, name: str, fmt: str, key: str | None = None) -> None:
+    if fmt == "PDF":
+        try:
+            from lab.pdf import markdown_pdf
+            data = markdown_pdf(text, title=name)
+        except ImportError:
+            column.caption(f"{label}：PDF 需安装 reportlab（requirements-ui.txt）")
+            return
+        column.download_button(label, data, f"{name}.pdf", mime="application/pdf", key=key)
+    else:
+        column.download_button(label, text, f"{name}.md", mime="text/markdown", key=key)
+
+
 def render_course_center() -> None:
     catalog = load_catalog()
+    fmt = _handout_format()
     st.caption("课程知识点与实验映射为拟议设计，须由授课教师逐项核对；课程名称与代码来自培养计划。")
     left, right = st.columns([2, 1])
     query = left.text_input("检索课程、代码或知识点", "")
@@ -111,12 +130,14 @@ def render_course_center() -> None:
                          hide_index=True, use_container_width=True)
             st.caption("机制边界：" + lesson.mechanism_boundary)
             st.markdown("**解释规范**\n\n" + "\n".join(f"- {r}" for r in lesson.interpretation_rules))
-            downloads = st.columns(3)
-            downloads[0].download_button("教师指导卡", teacher_guide(lesson, catalog), f"{lesson.lesson_id}-guide.md",
-                                         key=f"guide-{code}-{lesson.lesson_id}")
-            for column, level in zip(downloads[1:], PROGRAMS):
-                column.download_button(f"{PROGRAMS[level]}工作纸", worksheet(lesson, catalog, level),
-                                       f"{lesson.lesson_id}-worksheet-{level}.md", key=f"ws-{code}-{lesson.lesson_id}-{level}")
+            downloads = st.columns(5)
+            lid = lesson.lesson_id
+            _handout(downloads[0], "教师指导卡", teacher_guide(lesson, catalog), f"{lid}-guide", fmt, f"guide-{code}-{lid}")
+            for column, level in zip(downloads[1:3], PROGRAMS):
+                _handout(column, f"{PROGRAMS[level]}工作纸", worksheet(lesson, catalog, level), f"{lid}-worksheet-{level}",
+                         fmt, f"ws-{code}-{lid}-{level}")
+            _handout(downloads[3], "试点记录表", pilot_record(lesson, catalog), f"{lid}-pilot-record", fmt, f"pilot-{code}-{lid}")
+            _handout(downloads[4], "学生反馈问卷", student_feedback(lesson, catalog), f"{lid}-feedback", fmt, f"fb-{code}-{lid}")
 
 
 def _edited_spec(base: ScenarioSpec) -> ScenarioSpec:
@@ -151,6 +172,7 @@ def _edited_spec(base: ScenarioSpec) -> ScenarioSpec:
 
 def render_scenario_lab(output_root: Path) -> None:
     catalog = load_catalog()
+    fmt = _handout_format()
     ids = list(catalog.scenarios)
     default = st.session_state.get("lab_scenario", ids[0])
     sid = st.selectbox("标准实验", ids, index=ids.index(default) if default in ids else 0,
@@ -177,7 +199,7 @@ def render_scenario_lab(output_root: Path) -> None:
     _gate(report)
     if spec.review.status == "draft":
         st.info("已修改：本次配置与审核版本不同，运行归档会记录新的 scenario_hash 与草稿状态。")
-    st.download_button("下载课题卡（当前配置）", scenario_card(spec, catalog), f"{spec.scenario_id}-card.md")
+    _handout(st, "下载课题卡（当前配置）", scenario_card(spec, catalog), f"{spec.scenario_id}-card", fmt)
 
     teacher = st.text_input("确认教师", st.session_state.get("lab_teacher", ""))
     reviewed = st.checkbox("我已阅读模型假设与限制，确认按上述配置运行")
@@ -225,6 +247,7 @@ def _agent_trace(run_dir: Path) -> None:
 
 
 def render_comparison(output_root: Path) -> None:
+    fmt = _handout_format()
     comparisons = list_comparisons(output_root)
     if not comparisons:
         st.info("尚无对照实验。先在场景实验室运行一个实验。")
@@ -283,7 +306,7 @@ def render_comparison(output_root: Path) -> None:
     exports[0].download_button("证据卡 JSON", json.dumps(card, ensure_ascii=False, indent=2, default=str), f"{manifest['comparison_id']}-evidence.json")
     exports[1].download_button("结果指标 CSV", outcomes.to_csv(index=False), f"{manifest['comparison_id']}-outcomes.csv")
     exports[2].download_button("逐步数据 CSV", steps.to_csv(index=False), f"{manifest['comparison_id']}-steps.csv")
-    exports[3].download_button("证据报告 Markdown", evidence_report(root), f"{manifest['comparison_id']}-report.md")
+    _handout(exports[3], f"证据报告 {fmt}", evidence_report(root), f"{manifest['comparison_id']}-report", fmt)
 
 
 def _render_draft_desk(output_root: Path) -> None:

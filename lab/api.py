@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 import lab.ai as lab_ai
@@ -37,7 +37,7 @@ from lab.capability import check_scenario
 from lab.catalog import load_catalog
 from lab.compare import comparison_frames, evidence_card
 from lab.compiler import scenario_hash
-from lab.export import evidence_report, scenario_card, teacher_guide, worksheet
+from lab.export import evidence_report, pilot_record, scenario_card, student_feedback, teacher_guide, worksheet
 from lab.observables import OBSERVABLES, OUTCOMES, STEP_COLUMNS
 from lab.service import LAB_MANIFEST, list_comparisons, load_manifest, run_scenario, verify_comparison
 from lab.specs import ScenarioSpec
@@ -200,8 +200,16 @@ def create_app(output_root: str | Path | None = None, *, token: str | None = Non
             raise HTTPException(404, "unknown comparison")
         return root
 
-    def markdown(text: str) -> PlainTextResponse:
-        return PlainTextResponse(text, media_type="text/markdown; charset=utf-8")
+    def markdown(text: str, name: str = "handout", fmt: str = "md"):
+        """Handout as Markdown, or as PDF with ?format=pdf (needs reportlab)."""
+        if fmt == "md":
+            return PlainTextResponse(text, media_type="text/markdown; charset=utf-8")
+        try:
+            from lab.pdf import markdown_pdf
+            data = markdown_pdf(text, title=name)
+        except ImportError as exc:
+            raise HTTPException(501, str(exc)) from None
+        return Response(data, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{name}.pdf"'})
 
     @app.get("/v1/courses")
     def courses(q: str = "", program: Literal["undergraduate", "graduate"] | None = None):
@@ -235,11 +243,11 @@ def create_app(output_root: str | Path | None = None, *, token: str | None = Non
                 "scenario_hash": scenario_hash(spec) if spec else None}
 
     @app.get("/v1/scenarios/{scenario_id}/card")
-    def card(scenario_id: str):
+    def card(scenario_id: str, fmt: Literal["md", "pdf"] = Query("md", alias="format")):
         catalog = load_catalog()
         if scenario_id not in catalog.scenarios:
             raise HTTPException(404, f"no runnable spec for {scenario_id}")
-        return markdown(scenario_card(catalog.scenarios[scenario_id], catalog))
+        return markdown(scenario_card(catalog.scenarios[scenario_id], catalog), f"{scenario_id}-card", fmt)
 
     @app.post("/v1/scenarios/validate")
     def validate(ref: ScenarioRef):
@@ -267,14 +275,24 @@ def create_app(output_root: str | Path | None = None, *, token: str | None = Non
         return lesson_or_404(lesson_id)[1].model_dump(mode="json")
 
     @app.get("/v1/lessons/{lesson_id}/guide")
-    def guide(lesson_id: str):
+    def guide(lesson_id: str, fmt: Literal["md", "pdf"] = Query("md", alias="format")):
         catalog, spec = lesson_or_404(lesson_id)
-        return markdown(teacher_guide(spec, catalog))
+        return markdown(teacher_guide(spec, catalog), f"{lesson_id}-guide", fmt)
 
     @app.get("/v1/lessons/{lesson_id}/worksheet")
-    def lesson_worksheet(lesson_id: str, level: Literal["undergraduate", "graduate"] = "undergraduate"):
+    def lesson_worksheet(lesson_id: str, level: Literal["undergraduate", "graduate"] = "undergraduate", fmt: Literal["md", "pdf"] = Query("md", alias="format")):
         catalog, spec = lesson_or_404(lesson_id)
-        return markdown(worksheet(spec, catalog, level))
+        return markdown(worksheet(spec, catalog, level), f"{lesson_id}-worksheet-{level}", fmt)
+
+    @app.get("/v1/lessons/{lesson_id}/pilot-record")
+    def lesson_pilot_record(lesson_id: str, fmt: Literal["md", "pdf"] = Query("md", alias="format")):
+        catalog, spec = lesson_or_404(lesson_id)
+        return markdown(pilot_record(spec, catalog), f"{lesson_id}-pilot-record", fmt)
+
+    @app.get("/v1/lessons/{lesson_id}/feedback-form")
+    def lesson_feedback_form(lesson_id: str, fmt: Literal["md", "pdf"] = Query("md", alias="format")):
+        catalog, spec = lesson_or_404(lesson_id)
+        return markdown(student_feedback(spec, catalog), f"{lesson_id}-feedback", fmt)
 
     @app.post("/v1/experiments", status_code=202, dependencies=[Depends(require_token)])
     def create_experiment(request: ExperimentRequest):
@@ -324,8 +342,8 @@ def create_app(output_root: str | Path | None = None, *, token: str | None = Non
         return _clean(frame[columns].to_dict(orient="records"))
 
     @app.get("/v1/comparisons/{comparison_id}/report")
-    def report(comparison_id: str):
-        return markdown(evidence_report(comparison_dir(comparison_id)))
+    def report(comparison_id: str, fmt: Literal["md", "pdf"] = Query("md", alias="format")):
+        return markdown(evidence_report(comparison_dir(comparison_id)), f"{comparison_id}-report", fmt)
 
     @app.post("/v1/comparisons/{comparison_id}/verify", dependencies=[Depends(require_token)])
     def verify(comparison_id: str):

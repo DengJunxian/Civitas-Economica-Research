@@ -213,6 +213,8 @@ def test_lab_ui_gate_confirmation_run_and_comparison(tmp_path, monkeypatch):
     assert not app.exception and app.dataframe  # course center lists courses
     next(s for s in app.selectbox if s.label == "查看课程").set_value("107349").run(timeout=30)
     assert not app.exception and len(app.get("download_button")) >= 6  # guide + two worksheets per lesson pack
+    app.sidebar.radio[1].set_value("PDF").run(timeout=60)  # handout format switch
+    assert not app.exception
     app.sidebar.radio[0].set_value("场景实验室").run(timeout=30)
     assert not app.exception
     run_button = next(b for b in app.button if b.label == "运行对照实验")
@@ -225,3 +227,19 @@ def test_lab_ui_gate_confirmation_run_and_comparison(tmp_path, monkeypatch):
     assert load_manifest(real_list(tmp_path)[0])["confirmed_by"] == "teacher"
     app.sidebar.radio[0].set_value("对照分析").run(timeout=30)
     assert not app.exception and not app.error
+
+
+def test_handout_pdf_and_pilot_forms():
+    pytest.importorskip("reportlab")
+    from lab.export import pilot_record, student_feedback, worksheet
+    from lab.pdf import SUBSTITUTES, markdown_pdf
+    catalog = load_catalog()
+    lesson = catalog.lessons["LESSON-MKT-001"]
+    feedback = student_feedback(lesson, catalog)
+    assert "匿名" in feedback and "保留期限" in feedback and "学号" in feedback  # tells students not to identify themselves
+    record = pilot_record(lesson, catalog)
+    assert all(stage.name in record for stage in lesson.stages) and "审查记录" in record
+    sample = "# 标题 · 测试\n\n- 要点 −1\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n```sh\nmain.py lab verify x\n```\n\n&nbsp;\n"
+    for text in (sample, worksheet(lesson, catalog, "graduate"), record, feedback):
+        assert markdown_pdf(text).startswith(b"%PDF")
+    assert "·−".translate(SUBSTITUTES) == "｜-"
