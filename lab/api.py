@@ -6,9 +6,15 @@ confirmation, and results are read back from the archives on disk. Runs
 execute one at a time in a background worker so classroom latency stays
 predictable; job records are in memory, comparisons persist on disk.
 
+The two AI endpoints wrap lab.ai: a scenario draft is only generated and
+gated, never run (running it is an ordinary POST /v1/experiments with a teacher
+confirmation), and an explanation reads a comparison resolved by id, never a
+client path. lab.ai failures keep their code and map to the statuses in
+AI_FAILURE_STATUS; no fallback text is returned.
+
 Set CIVITAS_LAB_TOKEN to require ``Authorization: Bearer <token>`` on the
-endpoints that start work or write files. Without it the API is meant for a
-single machine or a closed pilot network only.
+endpoints that start work, call a model or write files. Without it the API is
+meant for a single machine or a closed pilot network only.
 """
 from __future__ import annotations
 
@@ -25,6 +31,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+import lab.ai as lab_ai
 from core.reproducibility import utc_now_iso
 from lab.capability import check_scenario
 from lab.catalog import load_catalog
@@ -37,6 +44,19 @@ from lab.specs import ScenarioSpec
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 COMPARISON_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]{0,127}$")
+# lab.ai failure code -> HTTP status; the body is {"detail": <to_dict()>} with status "failed".
+AI_FAILURE_STATUS = {
+    "empty_input": 422, "input_too_long": 422, "unknown_metric": 422,
+    "unknown_course": 404,
+    "archive_not_verified": 409, "no_evidence": 409, "not_simulation": 409,
+    "budget_exceeded": 429,
+    "llm_error": 502, "invalid_json": 502, "schema_invalid": 502, "unsupported_number": 502,
+    "llm_not_configured": 503, "llm_dependencies_missing": 503,
+}
+_AI_SERVICE = ("budget_exceeded", "llm_error", "invalid_json", "llm_not_configured", "llm_dependencies_missing")
+DRAFT_FAILURES = ("empty_input", "input_too_long", "unknown_course", "schema_invalid", *_AI_SERVICE)
+EXPLAIN_FAILURES = ("empty_input", "input_too_long", "unknown_metric", "archive_not_verified", "no_evidence",
+                    "not_simulation", "unsupported_number", *_AI_SERVICE)
 
 
 class ScenarioRef(BaseModel):
@@ -51,6 +71,18 @@ class ExperimentRequest(ScenarioRef):
     idempotency_key: str | None = Field(None, min_length=1, max_length=128)
 
 
+class DraftRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    course_code: str
+    goal: str
+
+
+class ExplainRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    question: str
+    metric: str | None = None
+
+
 def _clean(value):
     """JSON-safe copy: NaN/inf become null instead of failing serialisation."""
     if isinstance(value, float):
@@ -60,6 +92,22 @@ def _clean(value):
     if isinstance(value, (list, tuple)):
         return [_clean(v) for v in value]
     return value
+
+
+def _ai_responses(codes: tuple[str, ...]) -> dict:
+    """OpenAPI entries listing which failure codes each status carries."""
+    by_status: dict[int, list[str]] = {}
+    for code in codes:
+        by_status.setdefault(AI_FAILURE_STATUS[code], []).append(code)
+    return {status: {"description": "detail.failure: " + ", ".join(names)} for status, names in sorted(by_status.items())}
+
+
+def _ai_result(result):
+    """Success body, or the same dict as an error with the status of its failure code."""
+    body = _clean(result.to_dict())
+    if not result.ok:
+        raise HTTPException(AI_FAILURE_STATUS.get(result.failure, 500), body)
+    return body
 
 
 class JobQueue:
@@ -282,6 +330,20 @@ def create_app(output_root: str | Path | None = None, *, token: str | None = Non
     @app.post("/v1/comparisons/{comparison_id}/verify", dependencies=[Depends(require_token)])
     def verify(comparison_id: str):
         return verify_comparison(comparison_dir(comparison_id))
+
+    @app.post("/v1/scenarios/draft", dependencies=[Depends(require_token)], responses=_ai_responses(DRAFT_FAILURES))
+    def draft(request: DraftRequest):
+        """AI 场景草案：只生成并过门禁，从不运行；运行仍走 POST /v1/experiments 与教师确认。"""
+        body = _ai_result(lab_ai.draft_scenario(request.goal, request.course_code, output_root=output_root / "ai_drafts"))
+        if body.get("path"):  # relative to the archive root; never expose server paths
+            body["path"] = Path(body["path"]).relative_to(output_root).as_posix()
+        return body
+
+    @app.post("/v1/comparisons/{comparison_id}/explain", dependencies=[Depends(require_token)],
+              responses=_ai_responses(EXPLAIN_FAILURES))
+    def explain(comparison_id: str, request: ExplainRequest):
+        """AI 证据解释：数值只能来自该对照的证据卡，并附模型限制。"""
+        return _ai_result(lab_ai.explain_comparison(comparison_dir(comparison_id), request.question, metric=request.metric))
 
     return app
 

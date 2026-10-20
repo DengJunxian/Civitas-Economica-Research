@@ -15,8 +15,10 @@ ExperimentRunner × N（核心 manifest 不变）+ lab_manifest.json (lab/servic
           ↓
 观测量与结果指标 (lab/observables.py) → 配对对照 / 2×2 交互 / 证据卡 (lab/compare.py)
           ↓
-CLI `main.py lab …` / Streamlit 课程中心、场景实验室、对照分析 (ui/lab.py)
+CLI `main.py lab …` / Streamlit 课程中心、场景实验室、对照分析、AI 教学席 (ui/lab.py)
 ```
+
+AI 只在两处接入（lab/ai.py，见下文"AI 教学编排"）：把教学目标写成场景草案，草案照常走门禁与教师确认；以及依据证据卡回答问题，数值经确定性核验。
 
 ## 场景协议
 
@@ -30,7 +32,7 @@ CLI `main.py lab …` / Streamlit 课程中心、场景实验室、对照分析 
 
 ## 能力门禁规则
 
-门禁不调用 LLM，任何来源（教师手写或日后的 AI 草案）都必须通过它。状态为 `supported`、`supported_with_warnings` 或 `rejected`，每条问题带代码、位置和中文说明。
+门禁不调用 LLM，任何来源（教师手写或 `lab/ai.py` 生成的 AI 草案）都必须通过它。状态为 `supported`、`supported_with_warnings` 或 `rejected`，每条问题带代码、位置和中文说明。
 
 | 类别 | 拒绝（error） | 提示（warning） |
 | --- | --- | --- |
@@ -58,7 +60,69 @@ CLI `main.py lab …` / Streamlit 课程中心、场景实验室、对照分析 
 - 核心指标在任一侧无挂单时记 `spread=0.0`；教学视图把它标为**不可定义**（空值），并统计"价差不可定义步数"。核心归档不做修改。
 - 配对差异逐种子计算 `Y(组) − Y(参考组)`，报告均值、标准差、正/负/零计数和种子集合的描述性 bootstrap 区间（固定随机种子，n≥3 才给出）。这是模型条件下的描述，不是现实因果估计。
 - 2×2 设计报告逐种子 Δ = [Y(both) − Y(a_only)] − [Y(b_only) − Y(neither)]。
-- 证据卡（`main.py lab compare`）只包含带 run_id 的数值、指标定义、失败运行、假设与限制，供日后的证据约束解释使用。
+- 证据卡（`main.py lab compare`）只包含带 run_id 的数值、指标定义、失败运行、假设与限制，是 AI 证据解释唯一可引用的数据来源。
+
+## AI 教学编排（规划 W10–11）
+
+模型是不受信任的提议者：它只产出草案或文字，是否可运行由确定性门禁决定，是否运行由教师决定，数值由代码从证据卡代入。调用走仓库已有的 `core.llm` 路由（DeepSeek → 智谱），关闭离线替身（`allow_offline_fallback=False`），不引入新 SDK。未配置 API key 时 AI 功能返回明确失败，离线规则实验不受影响。
+
+```text
+教学目标 + 课程 ──LLM──▶ JSON ──▶ ScenarioSpec v0.1 校验 ──▶ 强制草稿 ──▶ 能力门禁 ──▶ 教师确认 ──▶ run_scenario
+运行归档 ──verify_comparison──▶ 证据卡 ──▶ 事实表 ──LLM──▶ 带 {{事实ID}} 的回答 ──▶ 数值核验 ──▶ 代入数值 + 来源 + 模型限制
+```
+
+### 场景草案 `draft_scenario(goal_text, course_code)`
+
+- 提示词给出白名单（世界类型、事件及其 value 语义、拓扑、观测量、结果指标）、ScenarioSpec 的 JSON Schema 和该课程的一个标准场景作格式示例。需要其他引擎的机制（如降准 `rrr_cut`）要求模型如实写出事件类型，由门禁说明缺少哪个引擎，而不是用情绪冲击近似。
+- 教师目标放在 `<teacher_goal>` 数据标签内，文本中的同名标签与控制字符会被去除；防注入的最终保证不是提示词，而是下面这些确定性步骤。
+- 模型输出必须是单个 JSON 对象（允许包在一个 ```json 代码块中），并通过 `ScenarioSpec` 校验（`extra="forbid"`，模型无法夹带 `auto_run` 之类字段）。不合法即返回 `invalid_json` / `schema_invalid`，不会用模板替代。
+- 代码强制：`review` 固定为 `draft`（AI 不能审核自己的草案）；`scenario_id` 加 `-AI` 后缀，运行归档可区分 AI 草案与标准场景；`course_codes` 补上所选课程。每项改动都写进 `adjustments` 展示给教师。`approval` 与 `source_policy` 不改写：模型若关闭教师确认，由门禁以 `APPROVAL_REQUIRED` 拒绝。
+- 草案从不运行。结果连同门禁报告写入 `outputs/lab/ai_drafts/<draft_id>/`（`request.json`、`ai_calls.jsonl`、`scenario.yaml`、`capability.json`）；运行仍须 `main.py lab run <scenario.yaml> --confirm <教师>`，或在 AI 教学席填写确认教师并勾选"已逐项审阅"。教师在页面上修改 YAML 后重新过门禁，仍为草稿。
+
+### 证据解释 `explain_comparison(comparison_dir, question)`
+
+- 先执行 `verify_comparison`：scenario_hash、config_hash 或子运行完整性有问题时拒绝解释（`archive_not_verified`），不调用模型。失败运行不算篡改，按证据卡列出、不纳入比较。
+- 证据卡展开成事实表，每个事实带指标和背后的 run_id；NaN（如 n<3 时的 bootstrap 区间）不可引用。
+
+| 事实 ID | 含义 |
+| --- | --- |
+| `v.<组>.s<种子>` | 单次运行的指标值（1 个 run_id） |
+| `g.<组>.{n,mean,sd,min,max}` | 组内各种子的描述统计 |
+| `d.<组>.{n,mean,sd,min,max,positive,negative,zero,bootstrap_low,bootstrap_high}` | 相对参考组的逐种子配对差汇总 |
+| `d.<组>.s<种子>` | 单个种子的配对差（2 个 run_id） |
+| `i.{n,mean,sd,min,max,bootstrap_low,bootstrap_high}`、`i.s<种子>` | 2×2 交互差异 |
+| `f.count` | 失败且未纳入比较的运行次数 |
+
+- 模型只输出 `{"answer": "…"}`，数值写成 `{{事实ID}}`。确定性核验（`check_explanation`）规则：
+  - 占位符必须存在于事实表，否则整段作废；
+  - 紧贴占位符前写出的数字必须在其精度内等于该事实（`3.12%{{d.B.s41}}` 对应 0.0312 可以；把非零值写成 0、符号相反都不行）；
+  - 其余任何阿拉伯数字（含全角）和"百分之…"一律视为无来源数值，整段作废（`unsupported_number`）。例外只有归档标识：场景 id、对照 id、run_id、组 id 与组名，以及"种子"后属于本次种子集合的编号。
+- 通过核验后由代码代入数值并编号，追加"数据来源"（事实 ID、数值、含义、run_id）和"模型限制"：场景 `limitations` 全文、`output_origin=simulation` 与场景版本声明、失败运行说明，无论模型是否提到。
+- 每次解释（含被拒的原文与违规项）追加到对照目录的 `ai_explanations.jsonl`，供课后审计 AI 的解释责任。
+
+### 调用日志与预算
+
+- 每次调用（含因预算或缺少 key 未发出的尝试）写一行 JSON 到上下文目录的 `ai_calls.jsonl`（解释写入对照目录，草案写入草案目录），并写入全局账本 `outputs/lab/ai_usage.jsonl`（通过预算检查的调用在账本中另有一行预留，见下条）。字段：`call_id`、`purpose`、`provider`、`model`、`route_mode`、`fallback_chain`、`temperature`、`max_tokens`、`input_hash`（消息的 SHA-256）、`input_chars`、`prompt_tokens`/`completion_tokens`/`total_tokens`、`latency_ms`、`ok`、`failure_reason`、`budget`。不记录提示词与模型输出全文；错误信息经过脱敏，并替换掉环境中的 API key 原值。
+- 预算按本地日期统计已发出的调用，超出返回 `budget_exceeded`。检查与预留在同一把锁内完成（进程内线程锁，加 POSIX 上的账本文件锁 `fcntl.flock`）：通过检查的调用先在账本写一行预留（`reserved: true`，`dispatched: true`），再调用模型；结束后写入的完整记录（同一 `call_id`）取代预留行。所以 HTTP API 的并发请求、CLI 与页面同时调用时，当日发出的调用合计也不超过上限。调用失败仍计入；在调用模型之前就失败的（如缺少 key）不计入；进程在调用中途退出时，预留行保留并计入。Windows 没有 `fcntl`，只有同一进程内的调用受锁保护。配置（环境变量，见 `.env.example`）：
+
+| 变量 | 默认 | 说明 |
+| --- | --- | --- |
+| `CIVITAS_LAB_AI_DAILY_CALLS` | 30 | 每日调用上限（草案与解释合计）；0 即停用 |
+| `CIVITAS_LAB_AI_MAX_TOKENS` | 3000 | 单次输出 token 上限 |
+| `CIVITAS_LAB_AI_MAX_INPUT_CHARS` | 2000 | 教学目标或问题的字数上限 |
+| `CIVITAS_LAB_AI_ROUTE` | auto | `core.llm` 路由模式（auto/fast/slow/zhipu） |
+| `CIVITAS_LAB_AI_LEDGER` | outputs/lab/ai_usage.jsonl | 预算账本位置 |
+
+失败代码：`llm_not_configured`、`llm_dependencies_missing`、`llm_error`、`budget_exceeded`、`empty_input`、`input_too_long`、`unknown_course`、`unknown_metric`、`invalid_json`、`schema_invalid`、`archive_not_verified`、`no_evidence`、`not_simulation`、`unsupported_number`。
+
+### 已知限制
+
+- 数值核验只识别阿拉伯数字和"百分之…"；"翻倍""大幅上升"这类无数字的定量措辞和其他中文数词无法自动识别，仍需教师审阅。
+- 核验保证数值来自证据卡，不保证模型对方向或机制的文字描述正确；"数据来源"和事实表供教师核对。
+- 核验失败直接作废，不自动重试（重试会消耗预算，也可能掩盖模型的系统性问题）。
+- 预算账本的跨进程锁依赖 POSIX `fcntl.flock`；Windows 上只有同一进程内的调用受锁保护，多个进程同时调用时可能略超上限。
+- 预算按教学层调用计数；`core.llm` 路由在某个供应商失败时会按回退链尝试下一个模型，所以一次计数的调用可能对应多次供应商请求，实际尝试记录在 `fallback_chain` 中。
+- 自动化测试只使用假路由（覆盖注入文本、非法事件、非法 JSON、超预算、虚构数值）；尚未对真实模型做草案质量与解释质量评估。
 
 ## 使用
 
@@ -71,6 +135,9 @@ CLI `main.py lab …` / Streamlit 课程中心、场景实验室、对照分析 
 .venv/bin/python main.py lab verify outputs/lab/<id>
 .venv/bin/python main.py lab compare outputs/lab/<id> --metric zero_volume_steps
 .venv/bin/python main.py ui                              # 默认进入课程中心
+.venv/bin/python main.py lab draft --course 107349 --goal "比较有无恐慌冲击时的卖出决策"   # 只生成草案，不运行
+.venv/bin/python main.py lab run outputs/lab/ai_drafts/<draft_id>/scenario.yaml --confirm 张老师
+.venv/bin/python main.py lab explain outputs/lab/<id> --question "恐慌组的卖出决策占比与基准组有何不同？"
 ```
 
 场景参数也可以写成独立 YAML，用文件路径代替场景 id。
@@ -82,8 +149,8 @@ CLI `main.py lab …` / Streamlit 课程中心、场景实验室、对照分析 
 | G0 基线复现 | 完成，见 [基线审计](lab/BASELINE_AUDIT_2026-10-20.md) |
 | W3–4 LessonSpec/ScenarioSpec、知识点目录、转换器与能力门禁 | v0.1 完成；课程映射待教师核对 |
 | W5–6 实验服务封装、错误处理、归档索引 | 进程内服务 + lab manifest 完成；HTTP API、任务队列、跨进程隔离未做 |
-| P1 六个实验 EXP-01/02/05/06/07/08 + EXP-09 | 场景文档可运行、可校验；EXP-06/08/09 的教学效果受模型限制（见基线审计第 4 节），需决策 |
-| W7–9 教师工作台与可视化 | Streamlit 原型：课程检索、场景编辑与门禁、教师确认、对照图表、配对差异、逐笔追溯、导出 |
-| 旗舰课 LESSON-MKT-001 | 课堂包文档完成（阶段、工作纸、量表、解释规范）；未经教师评审 |
-| W10–11 AI 编排与证据解释 | 未开始；门禁和证据卡是其前置接口 |
-| EXP-10 多种子完整教学包、本科/硕士双层工作纸、PDF 导出 | 未开始 |
+| P1 六个实验 EXP-01/02/05/06/07/08 + EXP-09/10 | 场景文档可运行、可校验；EXP-06/08/09 的教学效果受模型限制（见基线审计第 4 节），需决策 |
+| W7–9 教师工作台与可视化 | Streamlit 原型：课程检索、场景编辑与门禁、教师确认、对照图表、配对差异、逐笔追溯、CSV/JSON 导出，以及课题卡、教师指导卡、本科/硕士工作纸和证据报告的 Markdown 下载 |
+| 旗舰课与课堂包 | 45 分钟旗舰课 LESSON-MKT-001，EXP-01/02/05/06/07/08/10 各一个 20 分钟课堂包，均含本科/硕士分层任务与教师引导；未经教师评审 |
+| W10–11 AI 编排与证据解释 | 完成（[lab/ai.py](../lab/ai.py)）：目标 → ScenarioSpec 草案（强制草稿、必经门禁与教师确认，从不自动运行）；证据卡约束的解释（占位符代入 + 确定性数值核验，始终附模型限制）；调用日志、每日预算、CLI `lab draft` / `lab explain`、Streamlit「AI 教学席」。测试只用假路由，真实模型的草案与解释质量未评估 |
+| EXP-10 多种子教学包、本科/硕士双层工作纸 | 完成（EXP-10 + LESSON-EMP-001；工作纸按层级导出）；PDF 导出未做 |

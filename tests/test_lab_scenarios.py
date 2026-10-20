@@ -86,3 +86,13 @@ def test_lesson_claims_about_weak_contagion_still_hold(tmp_path):
     # LESSON-BEH-002 / baseline audit F2: panic barely spreads beyond the 8 seeds by default.
     assert all(frame["infected"].max() <= 12 for frame in groups.values())
     assert groups["EM"]["infected"].max() == 8
+
+
+def test_lesson_claim_about_pairing_still_holds(tmp_path):
+    # LESSON-EMP-001: matched-seed differences vary far less than outcomes across seeds.
+    from lab.compare import group_summary, paired_differences
+    spec = load_catalog().scenarios["EXP-10"]
+    spec = spec.model_copy(update={"comparison": spec.comparison.model_copy(update={"seeds": (41, 42, 43, 44)})})
+    _, outcomes = comparison_frames(run_scenario(spec, confirmed_by="regression", output_root=tmp_path))
+    spread = group_summary(outcomes, "cumulative_volume").set_index("group_id")["sd"].min()
+    assert paired_differences(outcomes, "cumulative_volume", "A").iloc[0]["sd"] < spread / 5

@@ -27,12 +27,20 @@
     "hash": "977c76c7ca57d8798f6fdd4dcffe60e8594cf093fd5a08b477ebf84a6d9f7dd0",
     "version": "0.1.0"
   },
+  "EXP-10": {
+    "hash": "0336aa98f00adf0dcdc19bd6204998c9a8040f24bbcb1d87099a79838290927c",
+    "version": "0.1.0"
+  },
   "LESSON-BEH-001": {
     "hash": "f23c80c2ac7724d365c9bbf8f746fc12f67fadd1ff2f4053f8b49268a2e96001",
     "version": "0.1.0"
   },
   "LESSON-BEH-002": {
     "hash": "3328442b57aaa022ed393c46928eb776e45f2cb89a2754d93b82f863b3084549",
+    "version": "0.1.0"
+  },
+  "LESSON-EMP-001": {
+    "hash": "f053fb30f27ca9ce805161a8c673d5b6a41a3a6d936047f3329d3bb6583c8de5",
     "version": "0.1.0"
   },
   "LESSON-MKT-001": {

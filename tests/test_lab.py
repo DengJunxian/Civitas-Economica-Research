@@ -211,6 +211,8 @@ def test_lab_ui_gate_confirmation_run_and_comparison(tmp_path, monkeypatch):
     monkeypatch.setattr(lab_ui, "list_comparisons", lambda root: real_list(tmp_path))
     app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run(timeout=30)
     assert not app.exception and app.dataframe  # course center lists courses
+    next(s for s in app.selectbox if s.label == "查看课程").set_value("107349").run(timeout=30)
+    assert not app.exception and len(app.get("download_button")) >= 6  # guide + two worksheets per lesson pack
     app.sidebar.radio[0].set_value("场景实验室").run(timeout=30)
     assert not app.exception
     run_button = next(b for b in app.button if b.label == "运行对照实验")

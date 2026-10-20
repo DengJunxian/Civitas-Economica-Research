@@ -39,6 +39,14 @@ def main(argv=None) -> int:
     p.add_argument("--metric", help="Outcome id; defaults to the scenario's primary outcome")
     p = lab.add_parser("verify")
     p.add_argument("comparison_dir")
+    p = lab.add_parser("draft", help="AI scenario draft from a teaching goal (never runs anything)")
+    p.add_argument("--course", required=True, help="Course code, e.g. 107349")
+    p.add_argument("--goal", required=True, help="Teaching goal in natural language")
+    p.add_argument("--output", default="outputs/lab/ai_drafts")
+    p = lab.add_parser("explain", help="AI explanation that may only cite the comparison's evidence card")
+    p.add_argument("comparison_dir")
+    p.add_argument("--question", required=True)
+    p.add_argument("--metric", help="Outcome id; defaults to the scenario's primary outcome")
     args = parser.parse_args(argv)
     if not args.command:
         parser.print_help()
@@ -86,6 +94,7 @@ def main(argv=None) -> int:
 
 
 def lab_main(args) -> int:
+    from lab.ai import draft_scenario, explain_comparison
     from lab.capability import check_scenario
     from lab.catalog import load_catalog
     from lab.compare import evidence_card
@@ -120,6 +129,20 @@ def lab_main(args) -> int:
                                on_progress=lambda i, n, e: print(f"[{i}/{n}] {e['group_id']} seed={e['seed']} {e['status']}", file=sys.stderr)))
         elif args.lab_command == "compare":
             dump(evidence_card(args.comparison_dir, args.metric))
+        elif args.lab_command == "draft":
+            draft = draft_scenario(args.goal, args.course, output_root=args.output)
+            dump(draft.to_dict())
+            if draft.runnable:
+                print(f"草案已通过门禁，教师审阅后运行：main.py lab run {draft.path / 'scenario.yaml'} --confirm <教师>", file=sys.stderr)
+            return int(not draft.runnable)
+        elif args.lab_command == "explain":
+            result = explain_comparison(args.comparison_dir, args.question, metric=args.metric)
+            if not result.ok:
+                print(f"{result.failure}: {result.message}", file=sys.stderr)
+                for item in result.violations:
+                    print(f"  - {item}", file=sys.stderr)
+                return 1
+            print(result.answer)
         else:
             result = verify_comparison(args.comparison_dir)
             dump(result)

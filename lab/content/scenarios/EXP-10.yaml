@@ -1,0 +1,51 @@
+spec_version: "0.1"
+scenario_id: EXP-10
+version: 0.1.0
+title: 多种子实验与随机性分析
+module: E7
+phase: P1
+course_codes: ["103213", "102927", "107442"]
+levels: [undergraduate, graduate]
+question: 同一个实验换不同随机种子，结果差多少？配对种子能在多大程度上减少随机性对组间比较的干扰？
+objectives:
+  - 能描述同一配置在 10 个种子下结果的分布，说明单次路径不能代表稳健结论
+  - 能比较组均值差与逐种子配对差的离散程度，解释配对设计的作用
+  - 能说明种子间的描述性区间只反映模型内随机性，不是对真实市场的统计推断
+assumptions:
+  - 沿用 EXP-05 的两组设计（基准组 / 第 8 步 8 个恐慌种子），只把种子扩展到 41–50
+  - 每个种子同时决定人口、网络与决策随机数；同一种子下两组的初始世界相同
+limitations:
+  - 种子只抽样模型内部的随机性，不代表真实市场的不确定性，也不构成对现实总体的抽样
+  - 配对差的描述性 bootstrap 区间是对这 10 个种子的描述，不是显著性检验或因果推断
+  - 事件发生后两组的随机数消耗不同，配对只保证事件前路径一致
+  - 结果只代表该模型与参数，不能外推到真实 A 股
+evidence:
+  - 基准组 10 个种子的结果分布（均值、标准差、最小、最大）
+  - 恐慌组 − 基准组的逐种子配对差及其标准差
+  - 组标准差与配对差标准差的对比
+world:
+  type: single_asset_orderbook
+  agents: 64
+  steps: 30
+  initial_price: 3000.0
+  decision_mode: vectorized
+  social: {topology: small_world, neighbors: 6}
+comparison:
+  pairing: matched_seed
+  seeds: [41, 42, 43, 44, 45, 46, 47, 48, 49, 50]
+  reference_group: A
+  groups:
+    - id: A
+      label: 基准组
+      events: []
+    - id: B
+      label: 恐慌组
+      events:
+        - {step: 8, kind: panic, value: 8}
+observables: [price, volume, infected, decisions]
+outcome:
+  primary: cumulative_volume
+  secondary: [sell_decision_rate, final_return, max_drawdown]
+source_policy: {required_origin: simulation, allow_teaching_example_as_run: false}
+approval: {require_teacher_confirmation: true}
+review: {status: pending_teacher_review}
