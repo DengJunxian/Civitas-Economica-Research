@@ -69,7 +69,7 @@ ExperimentManifest + config/source/data hashes
 .venv/bin/python main.py lab run EXP-07 --confirm 张老师
 ```
 
-协议、门禁规则与覆盖范围见 [Civitas Lab 教学层](docs/LAB.md)；模型行为与基线结果见 [基线审计](docs/lab/BASELINE_AUDIT_2026-10-20.md)。
+协议、门禁规则与覆盖范围见 [Civitas Lab 教学层](docs/LAB.md)；HTTP API（`uvicorn lab.api:app`）、课堂包与材料导出见 [API 与课堂材料](docs/lab/API.md)；模型行为与基线结果见 [基线审计](docs/lab/BASELINE_AUDIT_2026-10-20.md)。
 
 ## 可选功能
 

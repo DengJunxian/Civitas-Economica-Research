@@ -168,6 +168,36 @@ class RubricItem(Spec):
     insufficient: str
 
 
+# Plan v1.0 appendix C; results that contradict a prediction are not penalised.
+DEFAULT_RUBRIC = (
+    RubricItem(dimension="概念准确", weight=25, excellent="术语准确，能解释金融机制与条件",
+               passing="大致正确，有个别混淆", insufficient="核心概念错误或缺失"),
+    RubricItem(dimension="实验设计", weight=25, excellent="对照明确、种子及因素控制得当",
+               passing="有基本组别，控制不完整", insufficient="未说明对照和变量"),
+    RubricItem(dimension="证据推理", weight=35, excellent="使用真实 run 的指标与订单，识别反例",
+               passing="能引用部分图表并推理", insufficient="只复述 AI 解释或虚构结果"),
+    RubricItem(dimension="模型边界", weight=15, excellent="指出假设、适用范围和后续验证",
+               passing="至少指出一个合理局限", insufficient="把模拟结果当成现实定律"),
+)
+
+
+class LevelTask(Spec):
+    """Plan section 3.1: one scenario, two cognitive levels."""
+    level: Level
+    knowledge: str
+    design: str
+    evidence: str
+    deliverable: str
+
+
+class Guidance(Spec):
+    """Teacher guide card (plan 5.1): prediction, operation order, probes, negative results."""
+    prediction: str
+    steps: tuple[str, ...] = Field(min_length=1)
+    probes: tuple[str, ...] = ()
+    negative_results: str = ""
+
+
 class LessonSpec(Spec):
     spec_version: Literal["0.1"] = SPEC_VERSION
     lesson_id: str = Field(pattern=r"^LESSON-[A-Z]+-\d{3}$")
@@ -180,13 +210,24 @@ class LessonSpec(Spec):
     scenarios: tuple[str, ...] = Field(min_length=1)
     stages: tuple[LessonStage, ...] = Field(min_length=1)
     worksheet: tuple[WorksheetQuestion, ...] = Field(min_length=1)
-    rubric: tuple[RubricItem, ...] = Field(min_length=1)
+    rubric: tuple[RubricItem, ...] = Field(DEFAULT_RUBRIC, min_length=1)
+    level_tasks: tuple[LevelTask, ...] = ()
+    guidance: Guidance | None = None
     interpretation_rules: tuple[str, ...] = ()
     mechanism_boundary: str = ""
     review: Review = Field(default_factory=Review)
 
+    def task(self, level: Level) -> LevelTask | None:
+        return next((t for t in self.level_tasks if t.level == level), None)
+
     @model_validator(mode="after")
     def validate_plan(self):
+        if len({t.level for t in self.level_tasks}) != len(self.level_tasks):
+            raise ValueError("at most one task per level")
+        dimensions = {item.dimension for item in self.rubric}
+        for question in self.worksheet:
+            if question.rubric_dimension and question.rubric_dimension not in dimensions:
+                raise ValueError(f"{question.id} maps to unknown rubric dimension {question.rubric_dimension}")
         cursor = 0
         for stage in self.stages:
             if stage.start_min != cursor or stage.end_min <= stage.start_min:

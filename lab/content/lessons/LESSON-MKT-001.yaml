@@ -59,11 +59,30 @@ worksheet:
   - {id: Q3, text: 停牌后没有成交，是否说明市场中不存在负面预期？, rubric_dimension: 证据推理}
   - {id: Q4, text: 如果更换种子或网络结构，结论还稳定吗？, rubric_dimension: 实验设计}
   - {id: Q5, text: 列出至少一项模型无法代表真实 A 股市场的关键约束。, rubric_dimension: 模型边界}
-rubric:
-  - {dimension: 概念准确, weight: 25, excellent: 术语准确，能解释金融机制与条件, passing: 大致正确，有个别混淆, insufficient: 核心概念错误或缺失}
-  - {dimension: 实验设计, weight: 25, excellent: 对照明确、种子及因素控制得当, passing: 有基本组别，控制不完整, insufficient: 未说明对照和变量}
-  - {dimension: 证据推理, weight: 35, excellent: 使用真实 run 的指标与订单，识别反例, passing: 能引用部分图表并推理, insufficient: 只复述 AI 解释或虚构结果}
-  - {dimension: 模型边界, weight: 15, excellent: 指出假设、适用范围和后续验证, passing: 至少指出一个合理局限, insufficient: 把模拟结果当成现实定律}
+# rubric omitted: plan appendix C default (lab.specs.DEFAULT_RUBRIC)
+level_tasks:
+  - level: undergraduate
+    knowledge: 描述价格来自撮合、恐慌如何进入决策、停牌的含义，并提出预测
+    design: 在给定的 A/B/C 组与三种网络之间比较
+    evidence: 解释一张图与一名投资者的交易链
+    deliverable: 课堂工作纸：三条证据、一条模型限制、一项新实验方案
+  - level: graduate
+    knowledge: 明确每个环节的机制假设，区分外生冲击、内生传播与机械效应
+    design: 为课后作业设计一个因素实验（如恐慌种子数 × 停牌时长），预先指定结果指标
+    evidence: 多种子分布与配对差异，包括零差异和方向不一致的结果
+    deliverable: 研究性实验报告与可复现材料（manifest、配置、run_id）
+guidance:
+  prediction: 恐慌冲击后价格、流动性和情绪会怎样变化？停牌能停止恐慌吗？
+  steps:
+    - 课前在场景实验室预运行 EXP-01、EXP-05、EXP-06、EXP-07，并校验归档
+    - 每个阶段先让学生写预测，再打开对照分析
+    - 每个实验至少展示一次逐笔追溯和一次配对差异表
+    - 最后导出证据报告作为讨论材料
+  probes:
+    - 价格平坦的那几步，是没有风险还是没有成交？
+    - 恐慌为什么没有扩散到更多投资者？
+    - 换一组种子，结论还成立吗？
+  negative_results: 默认参数下恐慌几乎不扩散，网络对照差异很小；课堂应把这作为检查机制是否被激活的讨论，而不是修改结论
 interpretation_rules:
   - 不要求价格必然下跌；模型结果与预测不一致不扣分，能以证据解释即可
   - 停牌导致的平坦价格曲线不代表波动风险下降；同时展示零成交与订单状态

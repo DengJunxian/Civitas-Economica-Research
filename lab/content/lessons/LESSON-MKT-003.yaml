@@ -1,0 +1,49 @@
+spec_version: "0.1"
+lesson_id: LESSON-MKT-003
+version: 0.1.0
+title: 为什么市场会流动性不足？（EXP-02 课堂包）
+duration_minutes: 20
+primary_courses:
+  - {code: "107349", name: 金融机构与金融市场, level: undergraduate}
+  - {code: "214822", name: 金融机构与金融市场, level: graduate}
+objectives:
+  - 能用深度、零成交步与价差不可定义步描述流动性
+  - 能区分没有成交和市场没有风险
+  - 能说明流动性变化来自投资者订单，而不是预设的做市商撤退
+scenarios: [EXP-02]
+stages:
+  - {name: 课前预测, start_min: 0, end_min: 3, teacher: 说明第 10 步的负面情绪冲击, student: 预测冲击后成交量、深度和被拒订单的变化}
+  - {name: 运行与观察, start_min: 3, end_min: 10, teacher: 运行 EXP-02 对照，展示深度与成交量, student: 记录冲击前后买卖盘深度和零成交步, scenario_id: EXP-02, groups: [A, S]}
+  - {name: 配对比较, start_min: 10, end_min: 15, teacher: 展示累计成交量和被拒订单的逐种子差异, student: 写出差异方向和 5 个种子中的一致程度, scenario_id: EXP-02, groups: [A, S]}
+  - {name: 讨论与局限, start_min: 15, end_min: 20, teacher: 讨论模型中没有做市商的含义, student: 写出一条证据和一条模型局限}
+worksheet:
+  - {id: Q1, text: 冲击后哪些指标变了、哪些几乎没变？请引用具体的组别与种子。, rubric_dimension: 证据推理}
+  - {id: Q2, text: 被拒订单增加说明了什么？拒绝原因来自订单表的哪一列？, rubric_dimension: 证据推理}
+  - {id: Q3, text: 某一步没有成交，能否说明这一步市场没有风险？, rubric_dimension: 概念准确}
+  - {id: Q4, text: 如果模型加入做市商，你预期哪些结论会改变？为什么现在不能下结论？, rubric_dimension: 模型边界}
+level_tasks:
+  - level: undergraduate
+    knowledge: 定义深度、价差与成交率，预测负面冲击后的流动性
+    design: 比较给定的正常市场与冲击组
+    evidence: 解释深度图和被拒订单的变化
+    deliverable: 课堂工作纸 Q1–Q4
+  - level: graduate
+    knowledge: 区分订单流驱动的流动性与做市商报价驱动的流动性
+    design: 增加冲击幅度（如 -0.3 与 -0.9）作为敏感性检验
+    evidence: 报告各冲击幅度下逐种子差异的分布，注明不显著或方向不一致的结果
+    deliverable: 敏感性检验说明，附 run_id 与配置
+guidance:
+  prediction: 负面情绪冲击后，买卖盘深度和成交量会怎样变化？
+  steps:
+    - 运行 EXP-02 两组对照
+    - 先看成交量与深度，再看价差不可定义步与被拒订单
+    - 选择被拒订单最多的一步，在逐笔追溯中查看拒绝原因
+  probes:
+    - 价差不可定义步数几乎不变，说明了什么？
+    - 被拒订单多是资金不足还是可卖持仓不足？
+  negative_results: 价差不可定义步数在两组间差异很小，因为默认人口买盘本来就薄；这是基准状态的特征，应如实记录
+interpretation_rules:
+  - 流动性要同时看深度、成交和订单状态，不只看价格
+  - 不预设做市商撤退；所有挂单来自合成投资者
+mechanism_boundary: 冲击以一次性全体情绪 -0.6 编码；没有做市商、库存或报价义务。
+review: {status: pending_teacher_review}

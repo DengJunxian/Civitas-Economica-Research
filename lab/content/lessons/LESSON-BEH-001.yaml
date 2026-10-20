@@ -1,0 +1,52 @@
+spec_version: "0.1"
+lesson_id: LESSON-BEH-001
+version: 0.1.0
+title: 恐慌会产生怎样的群体反应？（EXP-05 课堂包）
+duration_minutes: 20
+primary_courses:
+  - {code: "107429", name: 投资学, level: undergraduate}
+  - {code: "108272", name: 博弈论与信息经济学, level: undergraduate}
+related_courses:
+  - {code: "107349", name: 金融机构与金融市场, level: undergraduate}
+  - {code: "214822", name: 金融机构与金融市场, level: graduate}
+objectives:
+  - 能沿恐慌种子 → 传播 → 情绪 → 决策 → 订单 → 成交 → 价格追溯一条机制链
+  - 能用配对种子差异描述模型条件下的反应，不套用必定暴跌的结论
+  - 能指出抽象 panic 冲击与真实谣言文本之间的差距
+scenarios: [EXP-05]
+stages:
+  - {name: 课前预测, start_min: 0, end_min: 3, teacher: 说明第 8 步注入 8 个恐慌种子, student: 预测恐慌人数、卖出决策与价格的变化}
+  - {name: 运行与观察, start_min: 3, end_min: 10, teacher: 运行 EXP-05，展示恐慌人数与卖出决策, student: 记录第 8 步前后两组是否一致, scenario_id: EXP-05, groups: [A, B]}
+  - {name: 配对比较, start_min: 10, end_min: 15, teacher: 展示卖出决策占比与最大回撤的逐种子差异, student: 判断差异是否在 5 个种子中方向一致, scenario_id: EXP-05, groups: [A, B]}
+  - {name: 讨论与局限, start_min: 15, end_min: 20, teacher: 讨论恐慌为何没有扩散, student: 写出一条证据、一条局限和一个改进实验}
+worksheet:
+  - {id: Q1, text: 第 8 步之前两组的价格路径是否相同？为什么？, rubric_dimension: 实验设计}
+  - {id: Q2, text: 恐慌组的卖出决策占比变化了多少？5 个种子方向一致吗？, rubric_dimension: 证据推理}
+  - {id: Q3, text: 恐慌是否一定意味着每个投资者卖出？用决策表中的一个反例说明。, rubric_dimension: 概念准确}
+  - {id: Q4, text: 本实验中的“谣言”在模型里实际是什么？它与真实谣言有什么不同？, rubric_dimension: 模型边界}
+level_tasks:
+  - level: undergraduate
+    knowledge: 定义 SIRS 中的易感、恐慌、恢复状态，预测恐慌对卖出的影响
+    design: 比较给定的基准组与恐慌组
+    evidence: 解释恐慌人数曲线和一名受影响投资者的决策变化
+    deliverable: 课堂工作纸 Q1–Q4
+  - level: graduate
+    knowledge: 区分外生冲击与内生传播，说明配对种子在事件后不再保证同一随机路径
+    design: 增加恐慌种子数（8、16、32）的因素实验
+    evidence: 报告卖出决策占比与回撤的剂量—反应关系及其不确定性
+    deliverable: 研究性实验报告，附 manifest 与配置
+guidance:
+  prediction: 8 个投资者恐慌后，会有多少人被感染？价格会怎样？
+  steps:
+    - 运行 EXP-05，先确认第 8 步前两组路径相同
+    - 查看恐慌人数、卖出决策和价格
+    - 切换结果指标，比较卖出决策占比、最大回撤和累计成交量
+  probes:
+    - 恐慌人数为什么没有明显超过 8？
+    - 卖出决策增加了，价格却几乎没变，可能是什么原因？
+  negative_results: 默认传播参数下恐慌几乎不扩散，价格差异很小；这是模型给出的结果，应讨论传播强度与决策耦合的假设，而不是改写结论
+interpretation_rules:
+  - 不要求价格必然下跌；与预测不一致的结果同样有价值
+  - 配对种子只保证初始世界相同，事件后随机路径不同
+mechanism_boundary: 施加的是抽象 panic 种子冲击与 SIRS 传播；不是从谣言文本推导出的信念变化，文本真假与辟谣属于 P2 扩展。
+review: {status: pending_teacher_review}
