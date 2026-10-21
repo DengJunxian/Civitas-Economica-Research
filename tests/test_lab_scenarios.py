@@ -83,11 +83,16 @@ def test_lesson_claims_about_tax_cut_still_hold(tmp_path):
     assert groups["T"]["volume"].equals(groups["A"]["volume"])
 
 
-def test_lesson_claims_about_weak_contagion_still_hold(tmp_path):
-    groups = _run(tmp_path, "EXP-06")
-    # LESSON-BEH-002 / baseline audit F2: panic barely spreads beyond the 8 seeds by default.
-    assert all(frame["infected"].max() <= 12 for frame in groups.values())
+def test_lesson_claims_about_contagion_still_hold(tmp_path):
+    # LESSON-BEH-001 / audit F2: at the default beta the panic barely spreads beyond its 8 seeds.
+    assert all(frame["infected"].max() <= 12 for frame in _run(tmp_path / "exp05", "EXP-05").values())
+    # LESSON-BEH-002 / MKT-001: with the disclosed beta=1.0 the edged networks spread further than the empty one,
+    # while the price effect stays small.
+    groups = _run(tmp_path / "exp06", "EXP-06")
     assert groups["EM"]["infected"].max() == 8
+    assert groups["SW"]["infected"].max() > 8 and groups["RG"]["infected"].max() > 8
+    finals = [frame["price"].iloc[-1] for frame in groups.values()]
+    assert (max(finals) - min(finals)) / min(finals) < 0.01
 
 
 def test_lesson_claim_about_pairing_still_holds(tmp_path):

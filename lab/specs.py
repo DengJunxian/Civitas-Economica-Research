@@ -294,3 +294,9 @@ class CalculatorSpec(Spec):
 
 def load_calculator(path: str | Path) -> CalculatorSpec:
     return CalculatorSpec.model_validate(_load_yaml(path))
+
+
+def json_schemas() -> dict[str, dict]:
+    """Machine-readable protocol v0.1 (written to docs/lab/schemas by scripts/export_lab_schemas.py)."""
+    return {"scenario_spec": ScenarioSpec.model_json_schema(), "lesson_spec": LessonSpec.model_json_schema(),
+            "calculator_spec": CalculatorSpec.model_json_schema()}

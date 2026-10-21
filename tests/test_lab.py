@@ -120,6 +120,7 @@ def test_gate_names_the_missing_engine():
     ({"comparison__groups": [{"id": "A", "label": "a"}, {"id": "B", "label": "b"}]}, "IDENTICAL_GROUPS"),
     ({"comparison__seeds": [3]}, "SINGLE_SEED"),
     ({"comparison__groups": [{"id": "A", "label": "a", "events": [{"step": 2, "kind": "tax_change", "value": 0.05}]}]}, "UNUSUAL_VALUE"),
+    ({"world__market_regime": "bull"}, "REGIME_LIMITED_EFFECT"),
 ])
 def test_gate_warnings_do_not_block(overrides, code):
     report = check_scenario(spec(**overrides))

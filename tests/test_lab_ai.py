@@ -427,3 +427,51 @@ def test_ai_desk_requires_teacher_confirmation_before_running_a_draft(tmp_path, 
     next(t for t in app.text_area if t.label == "问题").set_value("成交量差异？").run(timeout=30)
     next(b for b in app.button if b.label == "生成证据解释").click().run(timeout=60)
     assert not app.exception and any("数据来源" in m.value for m in app.markdown)
+
+
+def test_course_and_teacher_budgets(tmp_path, comparison, monkeypatch):
+    monkeypatch.setenv("CIVITAS_LAB_AI_COURSE_DAILY_CALLS", "2")
+    monkeypatch.setenv("CIVITAS_LAB_AI_TEACHER_DAILY_CALLS", "1")
+    router = FakeRouter(*[reply(draft_payload()) for _ in range(4)])
+    first = draft_scenario("目标", "107349", router=router, output_root=tmp_path, requested_by="张老师")
+    same_teacher = draft_scenario("目标", "107349", router=router, output_root=tmp_path, requested_by=" 张老师 ")
+    other = draft_scenario("目标", "107349", router=router, output_root=tmp_path, requested_by="李老师")
+    course_full = draft_scenario("目标", "107349", router=router, output_root=tmp_path, requested_by="王老师")
+    other_course = draft_scenario("目标", "107429", router=router, output_root=tmp_path, requested_by="王老师")
+    assert first.ok and other.ok and other_course.ok
+    assert same_teacher.failure == course_full.failure == "budget_exceeded"
+    assert "张老师" in same_teacher.message and "TEACHER" in same_teacher.message
+    assert "107349" in course_full.message and "COURSE" in course_full.message
+    assert len(router.calls) == 3 and first.call["requested_by"] == "张老师" and first.call["course_codes"] == ["107349"]
+    usage = ai_usage(requested_by="张老师", course_codes=["107349", "107429"])
+    assert usage["used"] == 3 and usage["teacher"]["used"] == 1
+    assert usage["courses"] == {"107349": {"used": 2, "limit": 2}, "107429": {"used": 1, "limit": 2}}
+    # Explanations count against every course of the explained scenario.
+    blocked = explain_comparison(comparison, "成交量如何？", router=router, requested_by="赵老师")
+    assert blocked.failure == "budget_exceeded" and "107349" in blocked.message
+
+
+def test_ai_eval_harness_with_fake_model(tmp_path, comparison):
+    from lab.ai_eval import DRAFT_CASES, EXPLAIN_CASES, run_eval
+    bank = draft_payload(comparison={"seeds": [3, 4, 5], "reference_group": "A", "groups": [
+        {"id": "A", "label": "基准"}, {"id": "B", "label": "降准", "events": [{"step": 2, "kind": "rrr_cut", "value": 0.005}]}]})
+    fiscal = draft_payload(comparison={"seeds": [3, 4, 5], "reference_group": "A", "groups": [  # disguised as sentiment
+        {"id": "A", "label": "基准"}, {"id": "B", "label": "财政扩张", "events": [{"step": 2, "kind": "sentiment", "value": 0.5}]}]})
+    hostile = draft_payload(review={"status": "reviewed", "reviewers": ["AI"]}, approval={"require_teacher_confirmation": False})
+    router = FakeRouter(reply(draft_payload()), reply(draft_payload()), reply(draft_payload()), reply(bank), reply(fiscal),
+                        reply(hostile),
+                        json.dumps({"answer": "恐慌组的卖出决策占比平均高出 {{d.B.mean}}。"}, ensure_ascii=False),
+                        json.dumps({"answer": "真实市场通常会下跌 7%。"}, ensure_ascii=False),
+                        json.dumps({"answer": "事实表不包含任何未来市场数据，无法预测。"}, ensure_ascii=False))
+    receipt = run_eval(tmp_path / "eval", router=router, comparison=comparison)
+    assert receipt["status"] == "completed" and len(receipt["cases"]) == len(DRAFT_CASES) + len(EXPLAIN_CASES)
+    outcomes = {c["id"]: c["outcome"] for c in receipt["cases"]}
+    assert outcomes["needs_bank_engine"] == "as_expected"
+    assert outcomes["needs_fiscal_engine"] == "approximated_with_supported_events"
+    assert outcomes["injection_approve"] == "as_expected"
+    assert {c["id"]: c["failure"] for c in receipt["cases"]}["out_of_evidence"] == "unsupported_number"
+    summary = receipt["summary"]
+    assert summary["approximations"] == ["needs_fiscal_engine"] and summary["injection_contained"]
+    assert summary["explanation_answered_rate"] == 1.0 and summary["explanations_rejected_for_numbers"] == 1
+    assert (tmp_path / "eval" / "ai_eval.json").is_file() and (tmp_path / "eval" / "ai_usage.jsonl").is_file()
+    assert not Path(os.environ["CIVITAS_LAB_AI_LEDGER"]).exists()  # eval never spends the classroom budget

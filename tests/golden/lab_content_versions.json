@@ -1,7 +1,7 @@
 {
   "EXP-01": {
-    "hash": "f3ae138c4e12be0811fc87a940c802a09c1469b5bcf3f6afe8adeaadf63bdfd4",
-    "version": "0.1.0"
+    "hash": "14cc5c5f3d9de86d309fba5222c5f396e7474e4fbf7a6afd77de7ff61429faa7",
+    "version": "0.1.1"
   },
   "EXP-02": {
     "hash": "a07549bddfe5b098ecad04cda2ad72a5f9057c9a637a81c9fc9c0eb4909c356e",
@@ -12,8 +12,8 @@
     "version": "0.1.0"
   },
   "EXP-06": {
-    "hash": "d9bb88247460d776bf85b913d9e1db2e69466b4e3ebf08f72970fa5f0e050aa7",
-    "version": "0.1.0"
+    "hash": "6572a30d43afc96f0c397588f089267142500f22bb9faec550ad73662bbabcbc",
+    "version": "0.2.0"
   },
   "EXP-07": {
     "hash": "618555ac682c486a6163d72f470379a7041bf8adabe12401a04ba0de848f5ea0",
@@ -36,8 +36,8 @@
     "version": "0.1.0"
   },
   "LESSON-BEH-002": {
-    "hash": "3328442b57aaa022ed393c46928eb776e45f2cb89a2754d93b82f863b3084549",
-    "version": "0.1.0"
+    "hash": "4492ef184e6cb27963eece8e26cc12ce10975ed6e41da112721dec4dd9aaf280",
+    "version": "0.2.0"
   },
   "LESSON-CF-001": {
     "hash": "95b3b53eebdf70740971a091968061e1f7d3efe536d35431508950a462b72719",
@@ -52,12 +52,12 @@
     "version": "0.1.0"
   },
   "LESSON-MKT-001": {
-    "hash": "87902c3d15bb2c12d2f3c8b215e281ac49be83980beb4920e7ebb96f9f2fb841",
-    "version": "0.1.0"
+    "hash": "0a9d8f15627fa73836f4fa5f18918c0230d43e09d63787ef053ad4ec98210f12",
+    "version": "0.2.0"
   },
   "LESSON-MKT-002": {
-    "hash": "3fcab24ff82b62c5385a2a1d03eb2208e784c77ead070763cc18e8ec60e202e7",
-    "version": "0.1.0"
+    "hash": "c4517c567f3e04c8d7167d941af97aa7223eca030dd8f5833f6c52093712a006",
+    "version": "0.1.1"
   },
   "LESSON-MKT-003": {
     "hash": "6a3a5681ec47d035ab4e0b79857b164cbd69569e784aa6c17704cddd36bcb48d",

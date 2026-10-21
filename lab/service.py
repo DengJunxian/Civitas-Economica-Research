@@ -24,6 +24,7 @@ from lab.specs import ScenarioSpec
 
 LAB_MANIFEST = "lab_manifest.json"
 LAB_SCHEMA_VERSION = 1
+COMPARISON_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]{0,127}$")
 
 
 class ScenarioRejected(ValueError):
@@ -37,16 +38,22 @@ class ConfirmationRequired(PermissionError):
     pass
 
 
+def new_comparison_id(spec: ScenarioSpec) -> str:
+    slug = re.sub(r"[^A-Za-z0-9]+", "-", spec.scenario_id).strip("-")
+    return f"{slug}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:8]}"
+
+
 def run_scenario(spec: ScenarioSpec, *, confirmed_by: str = "", output_root: str | Path = "outputs/lab",
-                 on_progress: Callable[[int, int, dict], None] | None = None) -> Path:
+                 on_progress: Callable[[int, int, dict], None] | None = None, comparison_id: str | None = None) -> Path:
     report = check_scenario(spec)
     if not report.ok:
         raise ScenarioRejected(report)
     if spec.approval.require_teacher_confirmation and not confirmed_by.strip():
         raise ConfirmationRequired("Teacher confirmation is required before running this scenario")
     compiled = compile_scenario(spec)
-    slug = re.sub(r"[^A-Za-z0-9]+", "-", spec.scenario_id).strip("-")
-    comparison_id = f"{slug}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:8]}"
+    comparison_id = comparison_id or new_comparison_id(spec)
+    if not COMPARISON_ID.match(comparison_id):
+        raise ValueError(f"invalid comparison_id {comparison_id!r}")
     root = Path(output_root).resolve() / comparison_id
     root.mkdir(parents=True, exist_ok=False)
     write_json(root / "scenario.json", spec.model_dump(mode="json"))
@@ -68,6 +75,7 @@ def run_scenario(spec: ScenarioSpec, *, confirmed_by: str = "", output_root: str
             entry = {"group_id": item.group_id, "seed": item.seed,
                      "config_hash": stable_hash(item.config.model_dump(mode="json")), "status": "running"}
             manifest["runs"].append(entry)
+            write_json(root / LAB_MANIFEST, manifest)  # an interrupted comparison still shows the run in flight
             runner = ExperimentRunner(item.config)
             try:
                 path = runner.run(root / "runs")
@@ -123,3 +131,31 @@ def verify_comparison(root: str | Path) -> dict:
             runs.append({"run_id": entry["run_id"], "group_id": entry["group_id"], "seed": entry["seed"], "verified": False})
     status = "verified" if not problems and manifest["status"] == "completed" else "not_verified"
     return {"comparison_id": manifest["comparison_id"], "status": status, "problems": problems, "runs": runs}
+
+
+def run_scenario_job(spec_payload: dict, confirmed_by: str, output_root: str, comparison_id: str) -> None:
+    """Child-process entry point (picklable for the spawn start method)."""
+    run_scenario(ScenarioSpec.model_validate(spec_payload), confirmed_by=confirmed_by,
+                 output_root=output_root, comparison_id=comparison_id)
+
+
+def mark_stopped(root: str | Path, status: str, reason: str) -> None:
+    """Record that a comparison was stopped from outside (e.g. a timeout); completed runs stay as they are."""
+    path = Path(root) / LAB_MANIFEST
+    if not path.is_file():
+        return
+    manifest = load_manifest(root)
+    for entry in manifest["runs"]:
+        if entry["status"] == "running":
+            entry.update(status="interrupted", error=reason)
+    manifest.update(status=status, error=reason, ended_at=utc_now_iso())
+    write_json(path, manifest)
+
+
+def manifest_progress(root: str | Path, total: int) -> dict:
+    path = Path(root) / LAB_MANIFEST
+    if not path.is_file():
+        return {"done": 0, "total": total, "failed": 0}
+    runs = load_manifest(root)["runs"]
+    finished = [r for r in runs if r["status"] != "running"]
+    return {"done": len(finished), "total": total, "failed": sum(r["status"] != "completed" for r in finished)}

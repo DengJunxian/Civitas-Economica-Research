@@ -1,0 +1,61 @@
+spec_version: '0.1'
+scenario_id: EXP-90
+version: 0.1.0
+title: 示例：恐慌冲击配对对照
+module: E2
+phase: P1
+course_codes:
+- '107349'
+levels:
+- undergraduate
+question: 恐慌冲击会怎样改变卖出决策与成交？
+objectives:
+- 比较配对种子下两组的卖出决策与成交量
+assumptions:
+- 64 个合成投资者，单资产离散步连续撮合
+limitations:
+- 抽象 panic 种子冲击，不是谣言文本
+- 结果只代表该模型、参数与种子集合
+world:
+  type: single_asset_orderbook
+  agents: 64
+  steps: 30
+  initial_price: 3000.0
+  decision_mode: vectorized
+  social:
+    topology: small_world
+    neighbors: 6
+comparison:
+  pairing: matched_seed
+  seeds:
+  - 41
+  - 42
+  - 43
+  reference_group: A
+  groups:
+  - id: A
+    label: 基准组
+    events: []
+  - id: B
+    label: 恐慌组
+    events:
+    - step: 8
+      kind: panic
+      value: 8
+    agents: 128
+observables:
+- price
+- volume
+- infected
+- decisions
+outcome:
+  primary: sell_decision_rate
+  secondary:
+  - cumulative_volume
+source_policy:
+  required_origin: simulation
+  allow_teaching_example_as_run: false
+approval:
+  require_teacher_confirmation: true
+review:
+  status: draft

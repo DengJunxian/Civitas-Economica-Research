@@ -20,7 +20,7 @@ from lab.capability import (OTHER_UNSUPPORTED_EVENTS, PLANNED_EVENTS, SUPPORTED_
                             CapabilityReport, check_scenario)
 from lab.catalog import load_catalog
 from lab.compare import comparison_frames, evidence_card, factorial_interaction, group_summary, load_scenario_of, paired_differences
-from lab.export import (calculator_report, evidence_report, pilot_record, scenario_card, student_feedback, teacher_guide,
+from lab.export import (calculator_report, course_map_csv, evidence_report, pilot_record, scenario_card, student_feedback, teacher_guide,
                         worksheet)
 from lab.observables import OBSERVABLES, OUTCOMES, STEP_COLUMNS
 from lab.service import list_comparisons, load_manifest, run_scenario, verify_comparison
@@ -56,7 +56,7 @@ def _gate(report: CapabilityReport) -> None:
            f" · {report.run_count} 次运行 · {report.agent_steps} agent-steps")
     if report.issues:
         st.dataframe(pd.DataFrame([{"结果": SEVERITY[i.severity], "代码": i.code, "位置": i.path, "说明": i.message}
-                                   for i in report.issues]), hide_index=True, use_container_width=True)
+                                   for i in report.issues]), hide_index=True)
 
 
 def _run_confirmed(spec: ScenarioSpec, teacher: str, output_root: Path) -> None:
@@ -92,6 +92,8 @@ def render_course_center() -> None:
     catalog = load_catalog()
     fmt = _handout_format()
     st.caption("课程知识点与实验映射为拟议设计，须由授课教师逐项核对；课程名称与代码来自培养计划。")
+    st.download_button("下载课程映射表（CSV，供教师核对）", ("\ufeff" + course_map_csv(catalog)).encode("utf-8"),
+                       "course_map_v1.csv", mime="text/csv")
     left, right = st.columns([2, 1])
     query = left.text_input("检索课程、代码或知识点", "")
     programs = right.multiselect("层级", list(PROGRAMS), default=list(PROGRAMS), format_func=PROGRAMS.get)
@@ -100,7 +102,7 @@ def render_course_center() -> None:
              "优先级": c["priority"], "知识点": "；".join(c["knowledge_points"]),
              "可运行实验": sum(e["runnable"] for e in catalog.scenarios_for_course(c["code"])),
              "关联实验": len(c["scenarios"])} for c in courses]
-    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+    st.dataframe(pd.DataFrame(rows), hide_index=True)
     if not courses:
         return
     code = st.selectbox("查看课程", [c["code"] for c in courses],
@@ -128,11 +130,11 @@ def render_course_center() -> None:
             st.write("教学目标：\n" + "\n".join(f"- {o}" for o in lesson.objectives))
             st.dataframe(pd.DataFrame([{"阶段": s.name, "时间": f"{s.start_min}–{s.end_min} 分", "教师活动": s.teacher,
                                         "学生活动与产出": s.student, "实验": s.scenario_id, "组别": "、".join(s.groups)}
-                                       for s in lesson.stages]), hide_index=True, use_container_width=True)
+                                       for s in lesson.stages]), hide_index=True)
             st.markdown("**课堂工作纸**\n\n" + "\n".join(f"- {q.id}：{q.text}" for q in lesson.worksheet))
             st.dataframe(pd.DataFrame([{"评价项": r.dimension, "权重": f"{r.weight}%", "优秀（4）": r.excellent,
                                         "合格（2）": r.passing, "不足（0–1）": r.insufficient} for r in lesson.rubric]),
-                         hide_index=True, use_container_width=True)
+                         hide_index=True)
             st.caption("机制边界：" + lesson.mechanism_boundary)
             st.markdown("**解释规范**\n\n" + "\n".join(f"- {r}" for r in lesson.interpretation_rules))
             downloads = st.columns(5)
@@ -161,7 +163,7 @@ def _edited_spec(base: ScenarioSpec) -> ScenarioSpec:
         if chosen != (base.world.social.topology or "small_world") or group.social.topology:
             payload["comparison"]["groups"][index]["social"]["topology"] = chosen
         frame = pd.DataFrame([e.model_dump() for e in group.events], columns=["step", "kind", "value", "note"])
-        edited = st.data_editor(frame, num_rows="dynamic", use_container_width=True, key=f"events-{base.scenario_id}-{group.id}",
+        edited = st.data_editor(frame, num_rows="dynamic", key=f"events-{base.scenario_id}-{group.id}",
                                 column_config={"step": st.column_config.NumberColumn("步", min_value=1, step=1),
                                                "kind": st.column_config.SelectboxColumn("事件", options=EVENT_CHOICES),
                                                "value": st.column_config.NumberColumn("数值", format="%.5f"),
@@ -238,17 +240,17 @@ def _band_chart(steps: pd.DataFrame, column: str, title: str, show_seeds: bool) 
 def _agent_trace(run_dir: Path) -> None:
     agents = pd.read_csv(run_dir / "agents.csv")
     agent_id = st.selectbox("追溯投资者", sorted(agents["agent_id"].unique()))
-    st.dataframe(agents[agents["agent_id"] == agent_id], hide_index=True, use_container_width=True)
+    st.dataframe(agents[agents["agent_id"] == agent_id], hide_index=True)
     decisions = pd.read_csv(run_dir / "decisions.csv")
     orders = pd.read_csv(run_dir / "orders.csv")
     trades = pd.read_csv(run_dir / "trades.csv")
     st.markdown("**决策（意图）**")
-    st.dataframe(decisions[decisions["agent_id"] == agent_id], hide_index=True, use_container_width=True)
+    st.dataframe(decisions[decisions["agent_id"] == agent_id], hide_index=True)
     st.markdown("**订单**")
-    st.dataframe(orders[orders["agent_id"] == agent_id], hide_index=True, use_container_width=True)
+    st.dataframe(orders[orders["agent_id"] == agent_id], hide_index=True)
     st.markdown("**成交**")
     st.dataframe(trades[(trades["buyer_agent_id"] == agent_id) | (trades["seller_agent_id"] == agent_id)],
-                 hide_index=True, use_container_width=True)
+                 hide_index=True)
 
 
 def render_comparison(output_root: Path) -> None:
@@ -283,18 +285,18 @@ def render_comparison(output_root: Path) -> None:
         for column in STEP_COLUMNS[name]:
             if column == "halted":
                 continue
-            st.plotly_chart(_band_chart(steps, column, f"{OBSERVABLES[name].label} · {column}", show_seeds), use_container_width=True)
+            st.plotly_chart(_band_chart(steps, column, f"{OBSERVABLES[name].label} · {column}", show_seeds))
         if OBSERVABLES[name].note:
             st.caption(OBSERVABLES[name].note)
 
     metric = st.selectbox("结果指标 Y（预先指定）", [spec.outcome.primary, *spec.outcome.secondary],
                           format_func=lambda m: f"{OUTCOMES[m].label}（{m}）")
     st.caption(f"定义：{OUTCOMES[metric].definition}")
-    st.dataframe(group_summary(outcomes, metric), hide_index=True, use_container_width=True)
+    st.dataframe(group_summary(outcomes, metric), hide_index=True)
     diffs = paired_differences(outcomes, metric, manifest["reference_group"])
     if not diffs.empty:
         st.markdown("**配对种子差异**（组 − 参考组，逐种子；区间为该种子集合的描述性 bootstrap，不是现实因果估计）")
-        st.dataframe(diffs.drop(columns=["per_seed"]), hide_index=True, use_container_width=True)
+        st.dataframe(diffs.drop(columns=["per_seed"]), hide_index=True)
     interaction = factorial_interaction(outcomes, metric, spec)
     if interaction and interaction.get("available"):
         st.markdown(f"**2×2 交互差异** Δ = {interaction['formula']}")
@@ -322,7 +324,8 @@ def _render_draft_desk(output_root: Path) -> None:
                         placeholder="例如：让学生比较有无恐慌冲击时卖出决策与成交量的差异，并讨论停牌的作用")
     if st.button("生成场景草案", disabled=not goal.strip()):
         with st.spinner("模型起草中（只生成草案，不运行任何实验）"):
-            st.session_state["ai_draft"] = draft_scenario(goal, code, output_root=output_root / "ai_drafts")
+            st.session_state["ai_draft"] = draft_scenario(goal, code, output_root=output_root / "ai_drafts",
+                                                          requested_by=st.session_state.get("ai_requester", ""))
     draft = st.session_state.get("ai_draft")
     if draft is None:
         return
@@ -366,7 +369,8 @@ def _render_explain_desk(output_root: Path) -> None:
     question = st.text_area("问题", key="ai_question", placeholder="例如：恐慌组的卖出决策占比和基准组相比有什么不同？各种子一致吗？")
     if st.button("生成证据解释", disabled=not question.strip()):
         with st.spinner("模型解释中（只能引用证据卡中的数值）"):
-            st.session_state["ai_explanation"] = explain_comparison(root, question, metric=metric)
+            st.session_state["ai_explanation"] = explain_comparison(root, question, metric=metric,
+                                                                    requested_by=st.session_state.get("ai_requester", ""))
     result = st.session_state.get("ai_explanation")
     if result is None or result.comparison_id != Path(root).name or result.metric != metric:
         return
@@ -384,10 +388,14 @@ def _render_explain_desk(output_root: Path) -> None:
 
 
 def render_ai_desk(output_root: Path) -> None:
-    usage = ai_usage()
+    requester = st.text_input("教师（用于按教师统计 AI 预算，不是登录身份）", key="ai_requester")
+    usage = ai_usage(requested_by=requester)
     st.caption("AI 只能提议白名单内的参数与事件：草案一律为草稿，必须通过能力门禁并由教师确认后才会运行；"
                "解释只能引用证据卡中的数值，每个数值标注 run_id 与指标，并附模型限制。"
                f"今日 AI 调用 {usage['used']}/{usage['limit']}（CIVITAS_LAB_AI_DAILY_CALLS）。离线规则实验不依赖 AI。")
+    if usage["teacher"]:
+        st.caption(f"{usage['teacher']['name']} 今日 AI 调用 {usage['teacher']['used']}/{usage['teacher']['limit']}"
+                   "（CIVITAS_LAB_AI_TEACHER_DAILY_CALLS）")
     draft_tab, explain_tab = st.tabs(["场景草案", "证据解释"])
     with draft_tab:
         _render_draft_desk(output_root)
@@ -407,7 +415,7 @@ def _calculator_params(spec, base: dict, key: str) -> dict:
     rate = st.number_input("贴现率（%）", -99.0, 100.0, base["discount_rate"] * 100, step=0.5, key=f"{key}-rate") / 100
     frame = pd.DataFrame([{"项目": p["name"], "现金流（第 0 期起，逗号分隔）": ", ".join(f"{c:g}" for c in p["cash_flows"])}
                           for p in base["projects"]])
-    edited = st.data_editor(frame, num_rows="dynamic", use_container_width=True, key=f"{key}-projects")
+    edited = st.data_editor(frame, num_rows="dynamic", key=f"{key}-projects")
     projects = []
     for row in edited.itertuples(index=False):
         name, flows = row[0], row[1]
@@ -428,18 +436,18 @@ def _bond_results(result: dict) -> None:
     fig.add_scatter(x=curve["yield"] * 100, y=curve["duration_line"], mode="lines", name="久期线性近似",
                     line={"color": GROUP_COLORS[1], "dash": "dash"})
     st.plotly_chart(apply_dark_theme(fig, title="价格—收益率曲线（凸性 = 曲线与切线之间的距离）", height=340,
-                                     xaxis_title="到期收益率（%）", yaxis_title="价格"), use_container_width=True)
+                                     xaxis_title="到期收益率（%）", yaxis_title="价格"))
     shocks = pd.DataFrame(result["shocks"]).rename(columns={
         "shock_bp": "变动（bp）", "new_price": "新价格", "exact_change": "精确变化", "duration_estimate": "久期估计",
         "duration_error": "久期误差", "duration_convexity_estimate": "久期+凸性估计", "duration_convexity_error": "久期+凸性误差"})
-    st.dataframe(shocks, hide_index=True, use_container_width=True)
+    st.dataframe(shocks, hide_index=True)
 
 
 def _budget_results(params: dict, result: dict) -> None:
     rows = [{"项目": p["name"], "NPV": p["npv"], "IRR": "、".join(f"{r:.2%}" for r in p["irr"]) or "无",
              "回收期": p["payback"], "贴现回收期": p["discounted_payback"], "盈利指数": p["profitability_index"],
              "NPV 规则": {"accept": "接受", "reject": "拒绝", "indifferent": "无差异（NPV = 0）"}[p["decision"]]} for p in result["projects"]]
-    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+    st.dataframe(pd.DataFrame(rows), hide_index=True)
     for p in result["projects"]:
         if not p["irr_unique"]:
             st.warning(f"{p['name']}：现金流变号 {p['sign_changes']} 次，IRR 有 {len(p['irr'])} 个（或不存在），IRR 规则不适用，应以 NPV 判断。")
@@ -451,7 +459,7 @@ def _budget_results(params: dict, result: dict) -> None:
     fig.add_hline(y=0, line_color="rgba(148,163,184,0.5)")
     fig.add_vline(x=params["discount_rate"] * 100, line_dash="dot", line_color="rgba(148,163,184,0.7)")
     st.plotly_chart(apply_dark_theme(fig, title="净现值曲线（与横轴交点 = IRR；两曲线交点 = 交叉利率）", height=340,
-                                     xaxis_title="贴现率（%）", yaxis_title="NPV"), use_container_width=True)
+                                     xaxis_title="贴现率（%）", yaxis_title="NPV"))
     for c in result["crossover_rates"]:
         if c["rates"]:
             st.info(f"{c['projects'][0]} 与 {c['projects'][1]} 的交叉利率：{'、'.join(f'{r:.2%}' for r in c['rates'])}；"

@@ -23,7 +23,8 @@ import os
 import re
 import threading
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
+import queue
 from pathlib import Path
 from typing import Literal
 
@@ -38,9 +39,10 @@ from lab.capability import check_scenario
 from lab.catalog import load_catalog
 from lab.compare import comparison_frames, evidence_card
 from lab.compiler import scenario_hash
-from lab.export import calculator_report, evidence_report, pilot_record, scenario_card, student_feedback, teacher_guide, worksheet
+from lab.export import calculator_report, course_map_csv, evidence_report, pilot_record, scenario_card, student_feedback, teacher_guide, worksheet
 from lab.observables import OBSERVABLES, OUTCOMES, STEP_COLUMNS
-from lab.service import LAB_MANIFEST, list_comparisons, load_manifest, run_scenario, verify_comparison
+from lab.service import (LAB_MANIFEST, list_comparisons, load_manifest, manifest_progress, mark_stopped, new_comparison_id,
+                         run_scenario, run_scenario_job, verify_comparison)
 from lab.specs import ScenarioSpec
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -76,12 +78,14 @@ class DraftRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     course_code: str
     goal: str
+    requested_by: str = Field("", max_length=64, description="Self-declared teacher for budget accounting (not authentication)")
 
 
 class ExplainRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str
     metric: str | None = None
+    requested_by: str = Field("", max_length=64, description="Self-declared teacher for budget accounting (not authentication)")
 
 
 class CalculationRequest(BaseModel):
@@ -119,13 +123,24 @@ def _ai_result(result):
 
 
 class JobQueue:
-    def __init__(self, output_root: Path, max_workers: int):
+    """Serial run queue (one comparison at a time keeps classroom latency predictable).
+
+    With ``isolation="process"`` (default) every job runs in a freshly spawned child process, so a crash
+    or a hung run cannot take the API down; a job over ``timeout_seconds`` is terminated, marked
+    ``timeout`` and its archive manifest records which runs were interrupted. ``"thread"`` runs in-process.
+    Progress is read from the comparison's manifest on disk, which is rewritten after every run.
+    """
+
+    def __init__(self, output_root: Path, *, isolation: Literal["process", "thread"] = "process",
+                 timeout_seconds: float = 900.0):
         self.output_root = output_root
-        self.max_workers = max_workers
+        self.isolation = isolation
+        self.timeout_seconds = timeout_seconds
         self.jobs: dict[str, dict] = {}
         self.keys: dict[str, tuple[str, str]] = {}
         self.lock = threading.Lock()
-        self._executor: ThreadPoolExecutor | None = None
+        self.pending: queue.Queue = queue.Queue()
+        self._worker: threading.Thread | None = None
 
     def submit(self, spec: ScenarioSpec, confirmed_by: str, key: str | None) -> tuple[dict, bool]:
         fingerprint = f"{scenario_hash(spec)}:{confirmed_by}"
@@ -134,54 +149,86 @@ class JobQueue:
                 job_id, previous = self.keys[key]
                 if previous != fingerprint:
                     raise HTTPException(409, "idempotency_key was already used for a different request")
-                return dict(self.jobs[job_id]), False
+                return self._snapshot(job_id), False
             job_id = uuid.uuid4().hex[:12]
-            job = {"job_id": job_id, "status": "queued", "scenario_id": spec.scenario_id,
-                   "scenario_hash": scenario_hash(spec), "confirmed_by": confirmed_by, "created_at": utc_now_iso(),
-                   "progress": {"done": 0, "total": len(spec.comparison.groups) * len(spec.comparison.seeds), "failed": 0},
-                   "comparison_id": None, "error": None}
-            self.jobs[job_id] = job
+            self.jobs[job_id] = {
+                "job_id": job_id, "status": "queued", "scenario_id": spec.scenario_id,
+                "scenario_hash": scenario_hash(spec), "confirmed_by": confirmed_by, "created_at": utc_now_iso(),
+                "comparison_id": new_comparison_id(spec), "isolation": self.isolation,
+                "timeout_seconds": self.timeout_seconds, "error": None,
+                "total_runs": len(spec.comparison.groups) * len(spec.comparison.seeds)}
             if key:
                 self.keys[key] = (job_id, fingerprint)
-            if self._executor is None:
-                self._executor = ThreadPoolExecutor(max_workers=self.max_workers, thread_name_prefix="civitas-lab")
-            self._executor.submit(self._run, job_id, spec, confirmed_by)
-            return dict(job), True
+            self.pending.put((job_id, spec, confirmed_by))
+            if self._worker is None:
+                self._worker = threading.Thread(target=self._loop, name="civitas-lab-queue", daemon=True)
+                self._worker.start()
+            return self._snapshot(job_id), True
 
     def _update(self, job_id: str, **fields) -> None:
         with self.lock:
             self.jobs[job_id].update(fields)
 
+    def _loop(self) -> None:
+        while True:
+            job_id, spec, confirmed_by = self.pending.get()
+            try:
+                self._run(job_id, spec, confirmed_by)
+            except Exception as exc:  # recorded on the job; never reported as success
+                self._update(job_id, status="failed", error=f"{type(exc).__name__}: {exc}", ended_at=utc_now_iso())
+
     def _run(self, job_id: str, spec: ScenarioSpec, confirmed_by: str) -> None:
+        comparison_id = self.jobs[job_id]["comparison_id"]
+        root = self.output_root / comparison_id
         self._update(job_id, status="running", started_at=utc_now_iso())
+        if self.isolation == "thread":
+            run_scenario(spec, confirmed_by=confirmed_by, output_root=self.output_root, comparison_id=comparison_id)
+        else:
+            child = multiprocessing.get_context("spawn").Process(
+                target=run_scenario_job, name=f"civitas-lab-{job_id}", daemon=True,
+                args=(spec.model_dump(mode="json"), confirmed_by, str(self.output_root), comparison_id))
+            child.start()
+            child.join(self.timeout_seconds)
+            if child.is_alive():
+                child.terminate()
+                child.join(5)
+                if child.is_alive():
+                    child.kill()
+                    child.join()
+                reason = f"run exceeded the {self.timeout_seconds:g} s time limit and was terminated"
+                mark_stopped(root, "timeout", reason)
+                self._update(job_id, status="timeout", error=reason, ended_at=utc_now_iso())
+                return
+            if not (root / LAB_MANIFEST).is_file():
+                self._update(job_id, status="failed", error=f"worker exited with code {child.exitcode} before archiving",
+                             ended_at=utc_now_iso())
+                return
+        self._update(job_id, status=load_manifest(root)["status"], ended_at=utc_now_iso())
 
-        def progress(done: int, total: int, entry: dict) -> None:
-            with self.lock:
-                p = self.jobs[job_id]["progress"]
-                p.update(done=done, total=total, failed=p["failed"] + (entry["status"] != "completed"))
-
-        try:
-            root = run_scenario(spec, confirmed_by=confirmed_by, output_root=self.output_root, on_progress=progress)
-            self._update(job_id, status=load_manifest(root)["status"], comparison_id=root.name, ended_at=utc_now_iso())
-        except Exception as exc:  # recorded on the job; never reported as success
-            self._update(job_id, status="failed", error=f"{type(exc).__name__}: {exc}", ended_at=utc_now_iso())
+    def _snapshot(self, job_id: str) -> dict:
+        job = dict(self.jobs[job_id])
+        job["progress"] = manifest_progress(self.output_root / job["comparison_id"], job["total_runs"])
+        return job
 
     def get(self, job_id: str) -> dict:
         with self.lock:
             if job_id not in self.jobs:
                 raise HTTPException(404, "unknown job")
-            job = dict(self.jobs[job_id])
-            job["progress"] = dict(job["progress"])
-            return job
+            return self._snapshot(job_id)
 
 
-def create_app(output_root: str | Path | None = None, *, token: str | None = None, max_workers: int = 1) -> FastAPI:
+def create_app(output_root: str | Path | None = None, *, token: str | None = None,
+               isolation: Literal["process", "thread"] | None = None, timeout_seconds: float | None = None) -> FastAPI:
     output_root = Path(output_root or PROJECT_ROOT / "outputs/lab").resolve()
     token = token if token is not None else os.environ.get("CIVITAS_LAB_TOKEN", "")
-    queue = JobQueue(output_root, max_workers)
+    isolation = isolation or os.environ.get("CIVITAS_LAB_ISOLATION", "process")
+    if isolation not in {"process", "thread"}:
+        raise ValueError("isolation must be 'process' or 'thread'")
+    timeout_seconds = timeout_seconds if timeout_seconds is not None else float(os.environ.get("CIVITAS_LAB_RUN_TIMEOUT", "900"))
+    jobs = JobQueue(output_root, isolation=isolation, timeout_seconds=timeout_seconds)
     app = FastAPI(title="Civitas Lab API", version="0.1.0",
                   description="课程驱动的经济金融实验教学接口。仿真教学用途，结果不是市场预测或投资建议。")
-    app.state.jobs = queue
+    app.state.jobs = jobs
 
     def require_token(authorization: str = Header("")) -> None:
         if token and authorization != f"Bearer {token}":
@@ -225,6 +272,12 @@ def create_app(output_root: str | Path | None = None, *, token: str | None = Non
         return [{**c, "review_status": "proposed_pending_teacher_review",
                  "scenarios": [{"id": e["id"], "runnable": e["runnable"]} for e in catalog.scenarios_for_course(c["code"])]}
                 for c in catalog.search(q) if program is None or c["program"] == program]
+
+    @app.get("/v1/courses.csv")
+    def courses_csv():
+        """course_map_v1 for teacher review: proposed mapping plus empty feedback columns."""
+        return Response("\ufeff" + course_map_csv(load_catalog()), media_type="text/csv; charset=utf-8",
+                        headers={"Content-Disposition": 'attachment; filename="course_map_v1.csv"'})
 
     @app.get("/v1/courses/{code}")
     def course(code: str):
@@ -348,12 +401,12 @@ def create_app(output_root: str | Path | None = None, *, token: str | None = Non
             raise HTTPException(422, {"message": "rejected by capability gate", "capability": report.to_dict()})
         if spec.approval.require_teacher_confirmation and not request.confirmed_by.strip():
             raise HTTPException(403, "teacher confirmation (confirmed_by) is required before running")
-        job, _ = queue.submit(spec, request.confirmed_by.strip(), request.idempotency_key)
+        job, _ = jobs.submit(spec, request.confirmed_by.strip(), request.idempotency_key)
         return {**job, "capability": report.to_dict()}
 
     @app.get("/v1/experiments/{job_id}")
     def experiment(job_id: str):
-        return queue.get(job_id)
+        return jobs.get(job_id)
 
     @app.get("/v1/comparisons")
     def comparisons():
@@ -398,7 +451,8 @@ def create_app(output_root: str | Path | None = None, *, token: str | None = Non
     @app.post("/v1/scenarios/draft", dependencies=[Depends(require_token)], responses=_ai_responses(DRAFT_FAILURES))
     def draft(request: DraftRequest):
         """AI 场景草案：只生成并过门禁，从不运行；运行仍走 POST /v1/experiments 与教师确认。"""
-        body = _ai_result(lab_ai.draft_scenario(request.goal, request.course_code, output_root=output_root / "ai_drafts"))
+        body = _ai_result(lab_ai.draft_scenario(request.goal, request.course_code, output_root=output_root / "ai_drafts",
+                                                requested_by=request.requested_by))
         if body.get("path"):  # relative to the archive root; never expose server paths
             body["path"] = Path(body["path"]).relative_to(output_root).as_posix()
         return body
@@ -407,7 +461,8 @@ def create_app(output_root: str | Path | None = None, *, token: str | None = Non
               responses=_ai_responses(EXPLAIN_FAILURES))
     def explain(comparison_id: str, request: ExplainRequest):
         """AI 证据解释：数值只能来自该对照的证据卡，并附模型限制。"""
-        return _ai_result(lab_ai.explain_comparison(comparison_dir(comparison_id), request.question, metric=request.metric))
+        return _ai_result(lab_ai.explain_comparison(comparison_dir(comparison_id), request.question, metric=request.metric,
+                                                    requested_by=request.requested_by))
 
     return app
 

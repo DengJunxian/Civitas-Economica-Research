@@ -270,3 +270,26 @@ def calculator_report(spec, computed: dict) -> str:
     parts += ["## 假设\n\n" + _bullets(spec.assumptions), "## 局限\n\n" + _bullets(spec.limitations),
               "> 确定性公式计算：结果完全由输入与公式决定，相同输入总得到相同结果；不是仿真、市场预测或投资建议。"]
     return "\n\n".join(parts)
+
+
+COURSE_MAP_FEEDBACK = ["教师结论（确认/修改/删除）", "修改意见", "对应教学章节或周次", "审核人", "审核日期"]
+
+
+def course_map_csv(catalog: Catalog) -> str:
+    """course_map_v1 for teacher review (plan 11.3): proposed mapping plus empty feedback columns."""
+    import csv
+    import io
+    kinds = {"simulation": "仿真", "calculator": "计算", None: "未开放"}
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["课程代码", "课程名称", "层级", "类别", "优先级", "拟选知识点", "关联实验", "可用实验", "课堂包",
+                     "来源", "映射状态", *COURSE_MAP_FEEDBACK])
+    for course in catalog.courses:
+        entries = catalog.scenarios_for_course(course["code"])
+        writer.writerow([course["code"], course["name"], LEVELS[course["program"]], course["category"], course["priority"],
+                         "；".join(course["knowledge_points"]),
+                         "；".join(f"{e['id']} {e['title']}（{e['phase']}·{kinds[e['kind']]}）" for e in entries),
+                         "；".join(e["id"] for e in entries if e["runnable"]),
+                         "；".join(l.lesson_id for l in catalog.lessons_for_course(course["code"])),
+                         course["source"], "拟议，待教师核对", *[""] * len(COURSE_MAP_FEEDBACK)])
+    return buffer.getvalue()

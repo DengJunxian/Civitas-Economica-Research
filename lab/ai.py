@@ -77,6 +77,9 @@ class AISettings:
     draft_temperature: float = 0.2
     explain_temperature: float = 0.1
     usage_ledger: Path = field(default_factory=lambda: Path(os.environ.get("CIVITAS_LAB_AI_LEDGER", "") or DEFAULT_LEDGER))
+    # Plan 6.5 three-level budget; 0 disables a level. The requester name is self-declared (accounting, not auth).
+    course_daily_call_limit: int = field(default_factory=lambda: _env_int("CIVITAS_LAB_AI_COURSE_DAILY_CALLS", 0))
+    teacher_daily_call_limit: int = field(default_factory=lambda: _env_int("CIVITAS_LAB_AI_TEACHER_DAILY_CALLS", 0))
 
 
 def load_ai_settings() -> AISettings:
@@ -139,19 +142,35 @@ def _locked_ledger(path: Path):
         yield f
 
 
-def ai_usage(settings: AISettings | None = None) -> dict:
-    """Today's dispatched model calls against the per-day budget (local date).
+def _requester(name: str | None) -> str:
+    return re.sub(r"\s+", " ", _CONTROL.sub("", str(name or ""))).strip()[:64]
+
+
+def ai_usage(settings: AISettings | None = None, *, requested_by: str | None = None,
+             course_codes: list[str] | tuple[str, ...] = ()) -> dict:
+    """Today's dispatched model calls against the day, course and teacher budgets (local date).
 
     A call's final ledger row supersedes its reservation row (same ``call_id``), so each call counts once.
+    A call made for several courses counts against each of them.
     """
     settings = settings or load_ai_settings()
     today = _today()
     latest = {}
     for index, row in enumerate(_read_jsonl(settings.usage_ledger)):
         latest[row.get("call_id") or index] = row
-    used = sum(1 for r in latest.values() if r.get("dispatched") and r.get("date") == today)
-    return {"date": today, "used": used, "limit": settings.daily_call_limit,
-            "remaining": max(settings.daily_call_limit - used, 0)}
+    rows = [r for r in latest.values() if r.get("dispatched") and r.get("date") == today]
+    used = len(rows)
+    usage = {"date": today, "used": used, "limit": settings.daily_call_limit,
+             "remaining": max(settings.daily_call_limit - used, 0), "courses": {}, "teacher": None}
+    if settings.course_daily_call_limit:
+        for code in course_codes:
+            n = sum(code in (r.get("course_codes") or []) for r in rows)
+            usage["courses"][code] = {"used": n, "limit": settings.course_daily_call_limit}
+    who = _requester(requested_by)
+    if settings.teacher_daily_call_limit and who:
+        n = sum(r.get("requested_by") == who for r in rows)
+        usage["teacher"] = {"name": who, "used": n, "limit": settings.teacher_daily_call_limit}
+    return usage
 
 
 def _reserve_call(record: dict, settings: AISettings) -> None:
@@ -160,11 +179,19 @@ def _reserve_call(record: dict, settings: AISettings) -> None:
     The reservation row stays in the ledger if the process dies mid-call, so an unfinished call still counts.
     """
     with _locked_ledger(settings.usage_ledger) as ledger:
-        usage = ai_usage(settings)
+        usage = ai_usage(settings, requested_by=record["requested_by"], course_codes=record["course_codes"])
         record["date"] = usage["date"]
-        record["budget"] = {"limit": usage["limit"], "used_before": usage["used"]}
+        record["budget"] = {"limit": usage["limit"], "used_before": usage["used"],
+                            "courses": usage["courses"], "teacher": usage["teacher"]}
         if usage["used"] >= usage["limit"]:
             raise AIFailure("budget_exceeded", f"今日 AI 调用已达上限 {usage['limit']} 次（CIVITAS_LAB_AI_DAILY_CALLS），未调用模型")
+        for code, course in usage["courses"].items():
+            if course["used"] >= course["limit"]:
+                raise AIFailure("budget_exceeded", f"课程 {code} 今日 AI 调用已达上限 {course['limit']} 次"
+                                                   "（CIVITAS_LAB_AI_COURSE_DAILY_CALLS），未调用模型")
+        if usage["teacher"] and usage["teacher"]["used"] >= usage["teacher"]["limit"]:
+            raise AIFailure("budget_exceeded", f"教师 {usage['teacher']['name']} 今日 AI 调用已达上限 {usage['teacher']['limit']} 次"
+                                               "（CIVITAS_LAB_AI_TEACHER_DAILY_CALLS），未调用模型")
         record["dispatched"] = True
         ledger.write(_jsonl_line({**record, "reserved": True}))
 
@@ -198,7 +225,8 @@ def _tokens(usage: dict, *names: str) -> int | None:
 
 
 def _call_model(messages: list[dict], *, purpose: str, temperature: float, settings: AISettings, router,
-                log_dir: Path, validate: Callable[[str], Any]) -> tuple[Any, dict]:
+                log_dir: Path, validate: Callable[[str], Any], requested_by: str = "",
+                course_codes: list[str] | tuple[str, ...] = ()) -> tuple[Any, dict]:
     """One budgeted model call; ``validate`` turns the reply into a result or raises AIFailure.
 
     The record is written to ``log_dir`` and to the usage ledger whatever happens. The budget is
@@ -211,7 +239,8 @@ def _call_model(messages: list[dict], *, purpose: str, temperature: float, setti
               "fallback_chain": [], "temperature": temperature, "max_tokens": settings.max_tokens,
               "input_hash": hashlib.sha256(payload.encode("utf-8")).hexdigest(), "input_chars": len(payload),
               "prompt_tokens": None, "completion_tokens": None, "total_tokens": None, "latency_ms": None,
-              "ok": False, "failure_reason": ""}
+              "ok": False, "failure_reason": "", "requested_by": _requester(requested_by),
+              "course_codes": sorted(set(course_codes))}
     try:
         _reserve_call(record, settings)
         try:
@@ -387,7 +416,7 @@ def load_draft_yaml(text: str) -> ScenarioSpec:
 
 
 def draft_scenario(goal_text: str, course_code: str, *, router=None, settings: AISettings | None = None,
-                   output_root: str | Path = "outputs/lab/ai_drafts") -> ScenarioDraft:
+                   output_root: str | Path = "outputs/lab/ai_drafts", requested_by: str = "") -> ScenarioDraft:
     """Goal -> gated ScenarioSpec draft. Never runs; failures are explicit, never a template."""
     settings = settings or load_ai_settings()
     draft_id = f"draft-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:8]}"
@@ -414,7 +443,8 @@ def draft_scenario(goal_text: str, course_code: str, *, router=None, settings: A
 
         (spec, adjustments), result.call = _call_model(
             _draft_messages(goal, course), purpose="draft_scenario", temperature=settings.draft_temperature,
-            settings=settings, router=router, log_dir=result.path, validate=validate)
+            settings=settings, router=router, log_dir=result.path, validate=validate,
+            requested_by=requested_by, course_codes=[course_code])
     except AIFailure as exc:
         result.failure, result.message, result.call = exc.code, exc.message, exc.detail.get("call")
         return result
@@ -621,7 +651,7 @@ def _compose(body: str, citations: list[dict], card: dict) -> str:
 
 
 def explain_comparison(comparison_dir: str | Path, question: str, *, metric: str | None = None, router=None,
-                       settings: AISettings | None = None) -> Explanation:
+                       settings: AISettings | None = None, requested_by: str = "") -> Explanation:
     """Answer from the evidence card only; numbers are post-checked and limitations always appended."""
     settings = settings or load_ai_settings()
     root = Path(comparison_dir)
@@ -656,7 +686,8 @@ def explain_comparison(comparison_dir: str | Path, question: str, *, metric: str
 
         (body, result.citations), result.call = _call_model(
             _explain_messages(card, spec, facts, labels, result.question), purpose="explain_comparison",
-            temperature=settings.explain_temperature, settings=settings, router=router, log_dir=root, validate=validate)
+            temperature=settings.explain_temperature, settings=settings, router=router, log_dir=root, validate=validate,
+            requested_by=requested_by, course_codes=list(spec.course_codes))
         result.status, result.answer = "answered", _compose(body, result.citations, card)
     except AIFailure as exc:
         result.failure, result.message, result.call = exc.code, exc.message, exc.detail.get("call")

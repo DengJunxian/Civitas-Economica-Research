@@ -303,3 +303,32 @@ def test_calculator_endpoints(client):
     report = client.post("/v1/calculators/EXP-15/report", params={"format": "pdf"}, json={})
     assert report.headers["content-type"] == "application/pdf" and report.content.startswith(b"%PDF")
     assert "不是多智能体仿真" in client.post("/v1/calculators/EXP-17/report", json={}).text
+
+
+def test_process_isolation_times_out_and_records_it(tmp_path):
+    from lab.service import load_manifest
+    heavy = small_spec(agents=2000, steps=300)
+    heavy["comparison"] = {"seeds": [1], "groups": [{"id": "A", "label": "heavy"}]}
+    with TestClient(create_app(tmp_path, token="", isolation="process", timeout_seconds=4)) as c:
+        job = wait(c, c.post("/v1/experiments", json={"scenario": heavy, "confirmed_by": "t"}).json()["job_id"], timeout=60)
+    assert job["status"] == "timeout" and "time limit" in job["error"] and job["isolation"] == "process"
+    root = tmp_path / job["comparison_id"]
+    if root.exists():  # the child may be stopped before it archived anything
+        manifest = load_manifest(root)
+        assert manifest["status"] == "timeout" and all(r["status"] != "running" for r in manifest["runs"])
+        assert [r["status"] for r in manifest["runs"]] in ([], ["interrupted"])
+
+
+def test_thread_isolation_and_settings(tmp_path, monkeypatch):
+    with TestClient(create_app(tmp_path, token="", isolation="thread")) as c:
+        job = wait(c, c.post("/v1/experiments", json={"scenario": small_spec(), "confirmed_by": "t"}).json()["job_id"])
+    assert job["status"] == "completed" and job["isolation"] == "thread" and job["progress"]["done"] == 6
+    monkeypatch.setenv("CIVITAS_LAB_ISOLATION", "fork-bomb")
+    with pytest.raises(ValueError):
+        create_app(tmp_path)
+
+
+def test_course_map_csv(client):
+    response = client.get("/v1/courses.csv")
+    assert response.headers["content-type"].startswith("text/csv") and response.text.startswith("﻿课程代码")
+    assert "教师结论" in response.text and "107349" in response.text

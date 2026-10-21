@@ -43,9 +43,11 @@ def main(argv=None) -> int:
     p.add_argument("--course", required=True, help="Course code, e.g. 107349")
     p.add_argument("--goal", required=True, help="Teaching goal in natural language")
     p.add_argument("--output", default="outputs/lab/ai_drafts")
+    p.add_argument("--teacher", default="", help="Requesting teacher, for the per-teacher AI budget")
     p = lab.add_parser("explain", help="AI explanation that may only cite the comparison's evidence card")
     p.add_argument("comparison_dir")
     p.add_argument("--question", required=True)
+    p.add_argument("--teacher", default="", help="Requesting teacher, for the per-teacher AI budget")
     p.add_argument("--metric", help="Outcome id; defaults to the scenario's primary outcome")
     args = parser.parse_args(argv)
     if not args.command:
@@ -130,13 +132,13 @@ def lab_main(args) -> int:
         elif args.lab_command == "compare":
             dump(evidence_card(args.comparison_dir, args.metric))
         elif args.lab_command == "draft":
-            draft = draft_scenario(args.goal, args.course, output_root=args.output)
+            draft = draft_scenario(args.goal, args.course, output_root=args.output, requested_by=args.teacher)
             dump(draft.to_dict())
             if draft.runnable:
                 print(f"草案已通过门禁，教师审阅后运行：main.py lab run {draft.path / 'scenario.yaml'} --confirm <教师>", file=sys.stderr)
             return int(not draft.runnable)
         elif args.lab_command == "explain":
-            result = explain_comparison(args.comparison_dir, args.question, metric=args.metric)
+            result = explain_comparison(args.comparison_dir, args.question, metric=args.metric, requested_by=args.teacher)
             if not result.ok:
                 print(f"{result.failure}: {result.message}", file=sys.stderr)
                 for item in result.violations:

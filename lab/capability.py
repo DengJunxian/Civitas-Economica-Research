@@ -173,6 +173,10 @@ def check_scenario(spec: ScenarioSpec) -> CapabilityReport:
         report.error("UNSUPPORTED_DECISION", "world.decision_mode", "Mock 决策不是仿真结果，不能用于教学实验")
     elif world.decision_mode not in SUPPORTED_DECISIONS:
         report.error("UNKNOWN_DECISION", "world.decision_mode", f"P1 支持 {', '.join(SUPPORTED_DECISIONS)}")
+    if world.market_regime != "default":
+        report.warn("REGIME_LIMITED_EFFECT", "world.market_regime",
+                    "标准路径中 market_regime 只改变 Persona 画像，经从众度影响 SIRS 传播；无恐慌传播时输出完全相同，"
+                    "价格与决策基本不受影响（基线审计 F5），不宜当作市场状态变量")
     if not 2 <= world.agents <= 10_000:
         report.error("VALUE_OUT_OF_RANGE", "world.agents", "人口规模须在 2..10000")
     if not 1 <= world.steps <= 1_000:

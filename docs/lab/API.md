@@ -15,6 +15,7 @@
 - `POST /v1/experiments` 先过能力门禁，再检查 `confirmed_by`；通过后进入后台队列，立即返回 202 和 `job_id`。默认串行执行，课堂时延可预测。
 - 同一 `idempotency_key` 重复提交相同请求返回原任务；用于不同请求返回 409。
 - 任务状态在内存中；进程重启后任务记录消失，但对照归档保存在 `outputs/lab/`，可通过 `/v1/comparisons` 读取。
+- 每个对照默认在独立子进程中运行（`CIVITAS_LAB_ISOLATION=process`，spawn），子进程崩溃或卡死不会拖垮 API；超过 `CIVITAS_LAB_RUN_TIMEOUT`（默认 900 秒）即终止，任务状态为 `timeout`，归档 manifest 记 `timeout`，进行中的运行记 `interrupted`。任务的 `comparison_id` 在提交时就确定，`progress` 从归档 manifest 读取。
 - 失败运行保留在归档与任务状态中，不显示为成功。
 
 ## 接口
@@ -22,6 +23,7 @@
 | 方法与路径 | 用途 | 约束 |
 | --- | --- | --- |
 | `GET /v1/courses?q=&program=` | 课程、知识点与关联场景 | 每项带 `review_status`（课程映射待教师核对） |
+| `GET /v1/courses.csv` | 课程映射表 course_map_v1（含教师反馈空列，UTF-8 BOM） | |
 | `GET /v1/courses/{code}` | 单门课程、可运行场景与课堂包 | |
 | `GET /v1/scenarios` / `{id}` | 27 个场景索引；可运行场景返回 ScenarioSpec 与 scenario_hash | 未开放场景 `spec` 为 null，并给出所需引擎 |
 | `GET /v1/scenarios/{id}/card` | 课题卡（Markdown） | |
@@ -51,6 +53,7 @@
 
 - **草案从不运行。** `POST /v1/scenarios/draft` 只生成草案、强制 `review.status=draft`、过能力门禁，并存入 `<归档根>/ai_drafts/<draft_id>/`；不创建任务，也不写对照归档。门禁拒绝的草案仍返回 200（`status=draft`、`runnable=false`、`capability` 中给出原因），供教师修改。运行草案只能把返回的 `scenario` 原样或修改后提交给 `POST /v1/experiments`，并照常需要 `confirmed_by`（缺失 403；模型若关闭教师确认，门禁以 `APPROVAL_REQUIRED` 拒绝，422）。
 - **解释只读证据卡。** `POST /v1/comparisons/{id}/explain` 用与其他对照接口相同的规则解析 id（安全字符、必须是归档根目录下带 `lab_manifest.json` 的目录），不接受客户端传入的文件路径；请求体只允许 `question` 和 `metric`，多余字段 422。解释前先做归档完整性校验；回答中的数值由代码从证据卡代入并编号，`citations` 给出事实 ID、数值、指标和 run_id，`answer` 末尾总是附"数据来源"和"模型限制"。
+- 请求体可带 `requested_by`（自报的教师名，最多 64 字），用于按教师统计预算，不是身份认证。
 - 每次调用写入草案目录或对照目录的 `ai_calls.jsonl`，解释另写 `ai_explanations.jsonl`；每日预算与 CLI、页面共用同一账本（`CIVITAS_LAB_AI_LEDGER`，默认 `outputs/lab/ai_usage.jsonl`）。
 - 预算检查与预留在同一把锁内完成，通过检查的调用在调用模型之前就记入账本，所以同时到达的请求（以及同时运行的 CLI 与页面）合计也不会超过当日上限，多出的请求返回 429；跨进程的文件锁只在 POSIX 上有效（见 [LAB.md](../LAB.md)"调用日志与预算"）。
 
