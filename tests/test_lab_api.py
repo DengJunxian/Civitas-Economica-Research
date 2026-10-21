@@ -283,3 +283,23 @@ def test_every_ai_failure_code_has_a_documented_status(client):
     paths = client.get("/openapi.json").json()["paths"]
     assert "budget_exceeded" in paths["/v1/scenarios/draft"]["post"]["responses"]["429"]["description"]
     assert "unsupported_number" in paths["/v1/comparisons/{comparison_id}/explain"]["post"]["responses"]["502"]["description"]
+
+
+def test_calculator_endpoints(client):
+    labs = {c["lab_id"]: c for c in client.get("/v1/calculators").json()}
+    assert set(labs) == {"EXP-15", "EXP-17"} and labs["EXP-17"]["origin"] == "deterministic_calculation"
+    detail = client.get("/v1/scenarios/EXP-17").json()
+    assert detail["kind"] == "calculator" and detail["runnable"] and detail["spec"] is None and detail["calculator"]["calculator"] == "bond"
+    assert client.get("/v1/scenarios/EXP-05").json()["kind"] == "simulation"
+    bond = client.post("/v1/calculators/EXP-17/compute", json={"preset": "3 年期教科书例题"}).json()
+    assert round(bond["result"]["measures"]["price"], 4) == 95.1963
+    custom = client.post("/v1/calculators/EXP-17/compute", json={"params": {"coupon_rate": 0.0, "years": 7}}).json()
+    assert abs(custom["result"]["measures"]["macaulay_duration"] - 7) < 1e-12
+    multi = client.post("/v1/calculators/EXP-15/compute", json={"preset": "现金流两次变号：两个 IRR"}).json()
+    assert len(multi["result"]["projects"][0]["irr"]) == 2 and multi["result"]["best_by_irr"] is None
+    assert client.post("/v1/calculators/EXP-15/compute", json={"preset": "nope"}).status_code == 422
+    assert client.post("/v1/calculators/EXP-15/compute", json={"params": {"discount_rate": 5}}).status_code == 422
+    assert client.post("/v1/calculators/EXP-99/compute", json={}).status_code == 404
+    report = client.post("/v1/calculators/EXP-15/report", params={"format": "pdf"}, json={})
+    assert report.headers["content-type"] == "application/pdf" and report.content.startswith(b"%PDF")
+    assert "不是多智能体仿真" in client.post("/v1/calculators/EXP-17/report", json={}).text

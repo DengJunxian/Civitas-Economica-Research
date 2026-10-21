@@ -29,7 +29,9 @@ def _version(text: str) -> tuple[int, ...]:
 def _current() -> dict:
     catalog = load_catalog()
     return {**{sid: {"version": s.version, "hash": scenario_hash(s)} for sid, s in catalog.scenarios.items()},
-            **{lid: {"version": l.version, "hash": stable_hash(l.model_dump(mode="json"))} for lid, l in catalog.lessons.items()}}
+            **{lid: {"version": l.version, "hash": stable_hash(l.model_dump(mode="json"))} for lid, l in catalog.lessons.items()},
+            **{f"calc:{cid}": {"version": c.version, "hash": stable_hash(c.model_dump(mode="json"))}
+               for cid, c in catalog.calculators.items()}}
 
 
 def test_content_changes_require_version_bump():
@@ -96,3 +98,26 @@ def test_lesson_claim_about_pairing_still_holds(tmp_path):
     _, outcomes = comparison_frames(run_scenario(spec, confirmed_by="regression", output_root=tmp_path))
     spread = group_summary(outcomes, "cumulative_volume").set_index("group_id")["sd"].min()
     assert paired_differences(outcomes, "cumulative_volume", "A").iloc[0]["sd"] < spread / 5
+
+
+def _preset(lab_id: str, name: str) -> dict:
+    from lab.calculators import compute
+    spec = load_catalog().calculators[lab_id]
+    params = {} if name == "默认" else next(p.params for p in spec.presets if p.name == name)
+    return compute(spec.calculator, {**spec.defaults, **params})["result"]
+
+
+def test_lesson_claims_about_npv_irr_ranking_still_hold():
+    # LESSON-CF-001: at 3% NPV picks A while IRR picks B; above the crossover (8%) NPV picks B.
+    low = _preset("EXP-15", "NPV 与 IRR 排序冲突（贴现率 3%）")
+    assert (low["best_by_npv"], low["best_by_irr"]) == ("A 长期项目", "B 短期项目")
+    assert _preset("EXP-15", "同一组项目，贴现率 8%（高于交叉利率）")["best_by_npv"] == "B 短期项目"
+    assert len(_preset("EXP-15", "现金流两次变号：两个 IRR")["projects"][0]["irr"]) == 2
+
+
+def test_lesson_claims_about_duration_still_hold():
+    # LESSON-FI-001: zero-coupon duration = maturity; the long low-coupon bond shows the largest duration error.
+    assert abs(_preset("EXP-17", "10 年期零息债")["measures"]["macaulay_duration"] - 10) < 1e-12
+    errors = {name: max(abs(r["duration_error"]) for r in _preset("EXP-17", name)["shocks"])
+              for name in ("10 年期平价债", "10 年期零息债", "30 年期低票息债（凸性明显）")}
+    assert max(errors, key=errors.get) == "30 年期低票息债（凸性明显）"

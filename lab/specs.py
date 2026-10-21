@@ -252,3 +252,45 @@ def load_scenario(path: str | Path) -> ScenarioSpec:
 
 def load_lesson(path: str | Path) -> LessonSpec:
     return LessonSpec.model_validate(_load_yaml(path))
+
+
+class CalculatorPreset(Spec):
+    name: str = Field(min_length=1)
+    params: dict
+
+
+class CalculatorSpec(Spec):
+    """A deterministic calculation lab (plan 10.1): formulas, not an agent simulation."""
+    spec_version: Literal["0.1"] = SPEC_VERSION
+    lab_id: str = Field(pattern=r"^EXP-\d{2}$")
+    version: str = Field(pattern=r"^\d+\.\d+\.\d+$")
+    title: str = Field(min_length=1)
+    module: str = Field(pattern=r"^E[1-7](/E[1-7])?$")
+    phase: Literal["P1", "P2", "P3"]
+    calculator: Literal["bond", "capital_budgeting"]
+    course_codes: tuple[str, ...] = Field(min_length=1)
+    levels: tuple[Level, ...] = ("undergraduate",)
+    question: str = Field(min_length=1)
+    objectives: tuple[str, ...] = Field(min_length=1, max_length=5)
+    assumptions: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = Field(min_length=1)
+    defaults: dict = Field(default_factory=dict)
+    presets: tuple[CalculatorPreset, ...] = ()
+    review: Review = Field(default_factory=Review)
+
+    @model_validator(mode="after")
+    def validate_params(self):
+        from lab.calculators import CALCULATORS
+        model = CALCULATORS[self.calculator][0]
+        model.model_validate(self.defaults)
+        for preset in self.presets:
+            model.model_validate({**self.defaults, **preset.params})
+        return self
+
+    @property
+    def scenario_id(self) -> str:
+        return self.lab_id
+
+
+def load_calculator(path: str | Path) -> CalculatorSpec:
+    return CalculatorSpec.model_validate(_load_yaml(path))

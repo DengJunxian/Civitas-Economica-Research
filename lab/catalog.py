@@ -12,7 +12,7 @@ from pathlib import Path
 
 import yaml
 
-from lab.specs import LessonSpec, ScenarioSpec, load_lesson, load_scenario
+from lab.specs import CalculatorSpec, LessonSpec, ScenarioSpec, load_calculator, load_lesson, load_scenario
 
 CATALOG_DIR = Path(__file__).resolve().parent / "content"
 
@@ -23,6 +23,7 @@ class Catalog:
     index: tuple[dict, ...]
     scenarios: dict[str, ScenarioSpec]
     lessons: dict[str, LessonSpec]
+    calculators: dict[str, CalculatorSpec]
 
     def course(self, code: str) -> dict:
         return next(c for c in self.courses if c["code"] == code)
@@ -30,10 +31,18 @@ class Catalog:
     def entry(self, scenario_id: str) -> dict:
         return next(e for e in self.index if e["id"] == scenario_id)
 
+    def kind(self, scenario_id: str) -> str | None:
+        """"simulation" (agent market run), "calculator" (deterministic formulas) or None (not available yet)."""
+        return "simulation" if scenario_id in self.scenarios else "calculator" if scenario_id in self.calculators else None
+
+    def unit(self, scenario_id: str) -> ScenarioSpec | CalculatorSpec:
+        """The runnable teaching unit behind an id; both kinds carry title, question, objectives and limitations."""
+        return self.scenarios.get(scenario_id) or self.calculators[scenario_id]
+
     def scenarios_for_course(self, code: str) -> list[dict]:
         """Index entries linked to a course, each marked runnable or not."""
         ids = self.course(code)["scenarios"]
-        return [{**self.entry(i), "runnable": i in self.scenarios} for i in ids]
+        return [{**self.entry(i), "runnable": self.kind(i) is not None, "kind": self.kind(i)} for i in ids]
 
     def lessons_for_course(self, code: str) -> list[LessonSpec]:
         return [l for l in self.lessons.values()
@@ -63,13 +72,13 @@ def validate_catalog(catalog: Catalog) -> list[str]:
     for entry in catalog.index:
         for code in set(entry["courses"]) - course_codes:
             problems.append(f"{entry['id']} references unknown course {code}")
-    for sid, spec in catalog.scenarios.items():
+    for sid, spec in [*catalog.scenarios.items(), *catalog.calculators.items()]:
         if sid not in index_ids:
             problems.append(f"scenario spec {sid} missing from index")
         for code in set(spec.course_codes) - course_codes:
             problems.append(f"{sid} references unknown course {code}")
     for lid, lesson in catalog.lessons.items():
-        for sid in set(lesson.scenarios) - set(catalog.scenarios):
+        for sid in set(lesson.scenarios) - set(catalog.scenarios) - set(catalog.calculators):
             problems.append(f"lesson {lid} references scenario without spec: {sid}")
         for stage in lesson.stages:
             if stage.scenario_id in catalog.scenarios:
@@ -84,7 +93,12 @@ def load_catalog(root: str | Path = CATALOG_DIR) -> Catalog:
     root = Path(root)
     scenarios = {s.scenario_id: s for s in map(load_scenario, sorted((root / "scenarios").glob("*.yaml")))}
     lessons = {l.lesson_id: l for l in map(load_lesson, sorted((root / "lessons").glob("*.yaml")))}
-    catalog = Catalog(tuple(_yaml(root / "courses.yaml")), tuple(_yaml(root / "scenario_index.yaml")), scenarios, lessons)
+    calculators = {c.lab_id: c for c in map(load_calculator, sorted((root / "calculators").glob("*.yaml")))}
+    overlap = set(scenarios) & set(calculators)
+    if overlap:
+        raise ValueError(f"ids used by both a simulation scenario and a calculator: {sorted(overlap)}")
+    catalog = Catalog(tuple(_yaml(root / "courses.yaml")), tuple(_yaml(root / "scenario_index.yaml")), scenarios, lessons,
+                      calculators)
     problems = validate_catalog(catalog)
     if problems:
         raise ValueError("Invalid Civitas Lab catalog: " + "; ".join(problems))

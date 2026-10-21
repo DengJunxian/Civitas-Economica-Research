@@ -154,4 +154,5 @@ AI 只在两处接入（lab/ai.py，见下文"AI 教学编排"）：把教学目
 | 旗舰课与课堂包 | 45 分钟旗舰课 LESSON-MKT-001，EXP-01/02/05/06/07/08/10 各一个 20 分钟课堂包，均含本科/硕士分层任务与教师引导；未经教师评审 |
 | W10–11 AI 编排与证据解释 | 完成（[lab/ai.py](../lab/ai.py)）：目标 → ScenarioSpec 草案（强制草稿、必经门禁与教师确认，从不自动运行）；证据卡约束的解释（占位符代入 + 确定性数值核验，始终附模型限制）；调用日志、每日预算、CLI `lab draft` / `lab explain`、Streamlit「AI 教学席」。测试只用假路由，真实模型的草案与解释质量未评估 |
 | EXP-10 多种子教学包、本科/硕士双层工作纸 | 完成（EXP-10 + LESSON-EMP-001；工作纸按层级导出，支持 PDF） |
-| W14–15 技术验收 | `scripts/lab_acceptance.py` 断网、无 API key 一键验收：全部场景真实运行、校验、复现，17 个非法场景全部拒绝，64×30 p95；记录见 [验收记录](lab/ACCEPTANCE_2026-10-20.md)。课堂试点与教师审查（G3/G4）待真实课堂 |
+| W14–15 技术验收 | `scripts/lab_acceptance.py` 断网、无 API key 一键验收：全部场景真实运行、校验、复现，17 个非法场景全部拒绝，计算实验公式恒等式，64×30 p95；CI 中单独运行；记录见 [验收记录](lab/ACCEPTANCE_2026-10-20.md)。课堂试点与教师审查（G3/G4）待真实课堂 |
+| P2 入口：确定性计算实验 | EXP-17 债券价格、久期与凸性，EXP-15 净现值、IRR 与项目选择（[lab/calculators.py](../lab/calculators.py)，规划 10.1）。公式级测试先行（闭式解、手算值、数值导数）；标记为 `deterministic_calculation`，不是多智能体仿真，也不接入撮合内核；课堂包 LESSON-FI-001、LESSON-CF-001；Streamlit「计算实验室」与 `/v1/calculators`。EXP-15 的企业投资竞争仍需 P2 企业模型 |

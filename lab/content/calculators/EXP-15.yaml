@@ -1,0 +1,36 @@
+spec_version: "0.1"
+lab_id: EXP-15
+version: 0.1.0
+title: 净现值、内部收益率与项目选择（EXP-15 计算部分）
+module: E5
+phase: P2
+calculator: capital_budgeting
+course_codes: ["107340", "214828"]
+levels: [undergraduate, graduate]
+question: 用净现值和内部收益率评价投资项目时，结论在什么情况下会不一致？应该以哪个为准？
+objectives:
+  - 能计算项目的净现值、内部收益率、回收期、贴现回收期与盈利指数
+  - 能用净现值曲线和交叉利率解释互斥项目中 NPV 与 IRR 排序冲突
+  - 能识别现金流多次变号时的多个 IRR，说明 IRR 规则失效的条件
+assumptions:
+  - 现金流在期末发生，单一贴现率适用于所有期限，项目之间相互独立或互斥
+  - 现金流为确定值，不考虑融资方式、税收与实物期权
+limitations:
+  - 确定性公式计算，不是多智能体仿真；规划中"企业投资竞争"需要 P2 企业模型，本实验只覆盖项目评价公式
+  - 未考虑现金流不确定性、融资约束、税收、通胀与资本配给
+  - 结果只取决于输入的现金流和贴现率，不代表真实项目或投资建议
+defaults:
+  discount_rate: 0.03
+  projects:
+    - {name: A 长期项目, cash_flows: [-100, 10, 110]}
+    - {name: B 短期项目, cash_flows: [-100, 100, 15]}
+presets:
+  - name: NPV 与 IRR 排序冲突（贴现率 3%）
+    params: {discount_rate: 0.03}
+  - name: 同一组项目，贴现率 8%（高于交叉利率）
+    params: {discount_rate: 0.08}
+  - name: 现金流两次变号：两个 IRR
+    params: {discount_rate: 0.15, projects: [{name: M 非常规项目, cash_flows: [-100, 230, -132]}]}
+  - name: 常规项目与回收期
+    params: {discount_rate: 0.05, projects: [{name: C 常规项目, cash_flows: [-100, 30, 40, 50]}]}
+review: {status: pending_teacher_review}

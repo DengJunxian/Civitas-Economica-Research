@@ -1,0 +1,51 @@
+spec_version: "0.1"
+lesson_id: LESSON-CF-001
+version: 0.1.0
+title: NPV 和 IRR 说法不一样时听谁的？（EXP-15 课堂包）
+duration_minutes: 20
+primary_courses:
+  - {code: "107340", name: 公司金融, level: undergraduate}
+  - {code: "214828", name: 公司金融, level: graduate}
+objectives:
+  - 能计算净现值、内部收益率、回收期与盈利指数，并据此作出取舍
+  - 能用净现值曲线和交叉利率解释互斥项目的 NPV 与 IRR 排序冲突
+  - 能识别现金流多次变号时的多个 IRR，说明 IRR 规则失效的条件
+scenarios: [EXP-15]
+stages:
+  - {name: 课前预测, start_min: 0, end_min: 3, teacher: 展示长期项目 A 与短期项目 B 的现金流, student: 预测哪个项目更好、IRR 哪个更高}
+  - {name: 计算与比较, start_min: 3, end_min: 10, teacher: 在计算实验室展示两项目的 NPV、IRR 与净现值曲线, student: 记录贴现率 3% 时两种规则各选哪个项目, scenario_id: EXP-15}
+  - {name: 改变贴现率与现金流, start_min: 10, end_min: 15, teacher: 切换贴现率 8% 与两个 IRR 的预设, student: 找出交叉利率，说明排序为何改变；识别多个 IRR, scenario_id: EXP-15}
+  - {name: 讨论与局限, start_min: 15, end_min: 20, teacher: 讨论为何互斥项目应以 NPV 为准，以及模型没有包含的因素, student: 写出一条结论和一条局限}
+worksheet:
+  - {id: Q1, text: 贴现率 3% 时，按 NPV 和按 IRR 分别会选哪个项目？请引用计算结果。, rubric_dimension: 证据推理}
+  - {id: Q2, text: 交叉利率是多少？贴现率在交叉利率两侧时，NPV 排序如何变化？, rubric_dimension: 证据推理}
+  - {id: Q3, text: 为什么互斥项目应以 NPV 而不是 IRR 为准？, rubric_dimension: 概念准确}
+  - {id: Q4, text: 现金流两次变号的项目有几个 IRR？这时应该怎样判断？, rubric_dimension: 概念准确}
+  - {id: Q5, text: 列出至少一项本计算没有考虑、但真实投资决策必须考虑的因素。, rubric_dimension: 模型边界}
+level_tasks:
+  - level: undergraduate
+    knowledge: 定义 NPV、IRR、回收期与盈利指数，预测两项目的排序
+    design: 使用给定的预设比较两个贴现率
+    evidence: 读出项目评价表与净现值曲线，指出交叉利率
+    deliverable: 课堂工作纸 Q1–Q5
+  - level: graduate
+    knowledge: 说明 IRR 隐含的再投资假设与规模、时间差异对排序的影响
+    design: 自行构造一对规模不同的互斥项目，找出使排序反转的贴现率区间
+    evidence: 报告净现值曲线、交叉利率与差额现金流的 IRR，讨论多 IRR 情形
+    deliverable: 一页分析说明，附现金流输入与 params_hash
+guidance:
+  prediction: A 项目后期回报高，B 项目回报来得快。你觉得哪个更好？哪个 IRR 更高？
+  steps:
+    - 在计算实验室选 EXP-15，默认贴现率 3%
+    - 先看项目评价表，再看净现值曲线和交叉利率
+    - 切换到贴现率 8% 的预设，观察排序变化
+    - 切换到两个 IRR 的预设，讨论 IRR 规则何时失效
+  probes:
+    - B 的 IRR 更高，为什么在 3% 贴现率下 A 的 NPV 更大？
+    - 回收期短就一定更好吗？
+  negative_results: 两种规则给出相反结论并不是计算错误，而是项目现金流时间分布不同；多 IRR 的项目无法用 IRR 排序，这两种情况都要求回到 NPV
+interpretation_rules:
+  - 结果只取决于输入的现金流与贴现率，不代表真实项目
+  - 互斥项目以给定贴现率下的 NPV 为准
+mechanism_boundary: 确定现金流、单一贴现率、期末发生；不考虑融资、税收、不确定性与企业之间的竞争（规划中的企业投资竞争需要 P2 企业模型）。确定性公式计算，不是多智能体仿真。
+review: {status: pending_teacher_review}

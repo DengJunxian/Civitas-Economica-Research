@@ -32,6 +32,9 @@
 | `GET /v1/lessons/{id}/worksheet?level=` | 本科/硕士学生工作纸 | 只要求课程内匿名编号 |
 | `GET /v1/lessons/{id}/pilot-record` | 课堂试点记录表（规划 9.2：用时、中断、匿名产出统计、教师评价、审查签字） | |
 | `GET /v1/lessons/{id}/feedback-form` | 匿名学生反馈问卷（告知用途、可见范围与保留期限；概念测验题由授课教师编写） | 不收集姓名学号 |
+| `GET /v1/calculators` / `{lab_id}` | 确定性计算实验（EXP-17 债券、EXP-15 资本预算）及其预设 | `origin=deterministic_calculation`，不是仿真 |
+| `POST /v1/calculators/{lab_id}/compute` | `{"preset"?, "params"?}` → 计算结果（参数按 默认 ← 预设 ← params 合并） | 参数越界或未知预设 422；返回 `params_hash`，相同输入结果相同 |
+| `POST /v1/calculators/{lab_id}/report?format=` | 计算结果报告（Markdown/PDF） | |
 | `POST /v1/experiments` | 创建对照实验任务 | 门禁拒绝 422（附报告）；缺确认 403；可选令牌 |
 | `GET /v1/experiments/{job_id}` | 任务状态与进度 | |
 | `GET /v1/comparisons` / `{id}` | 对照归档列表与 lab manifest | id 只接受安全字符，且必须位于归档根目录下 |
@@ -71,6 +74,8 @@
 401（令牌）、404（未知对照）和请求体结构错误（422，`detail` 为字段错误列表，没有 `failure`）与其他接口相同。表中状态码与失败代码的对应在 `lab/api.py` 的 `AI_FAILURE_STATUS` 中，`/docs` 中每个接口也列出了各状态码对应的失败代码；`tests/test_lab_api.py` 检查 `lab/ai.py` 的每个失败代码都有映射，并且都写进了本文档。测试用替换 `lab.ai.default_router` 的假路由，不访问网络。
 
 ## 课堂包与课堂材料
+
+计算实验与仿真场景共用 `scenario_index.yaml` 的编号：`GET /v1/scenarios/{id}` 返回 `kind`（`simulation` / `calculator` / null），课程接口中每个场景同样带 `kind`。
 
 `lab/content/lessons/` 有 8 个课堂包：45 分钟旗舰课 LESSON-MKT-001，以及 EXP-01/02/05/06/07/08/10 各一个 20 分钟课堂包（MKT-002/003、BEH-001/002、MKT-004/005、EMP-001）。每个课堂包包含教学目标、连续的课堂阶段、工作纸问题（对应评分维度）、本科/硕士分层任务（规划 3.1）、教师引导策略（课前预测、操作顺序、异常追问、负结果讨论，规划 5.1）和评分量表（默认为规划附录 C）。
 

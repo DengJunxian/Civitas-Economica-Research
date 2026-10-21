@@ -243,3 +243,17 @@ def test_handout_pdf_and_pilot_forms():
     for text in (sample, worksheet(lesson, catalog, "graduate"), record, feedback):
         assert markdown_pdf(text).startswith(b"%PDF")
     assert "·−".translate(SUBSTITUTES) == "｜-"
+
+
+def test_calculator_lab_page():
+    pytest.importorskip("streamlit")
+    from pathlib import Path
+    from streamlit.testing.v1 import AppTest
+    app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run(timeout=30)
+    app.sidebar.radio[0].set_value("计算实验室").run(timeout=30)
+    assert not app.exception and any("不是多智能体仿真" in i.value for i in app.info)
+    next(s for s in app.selectbox if s.label == "计算实验").set_value("EXP-17").run(timeout=30)
+    assert [m.value for m in app.metric][0] == "100.0000"  # default 10-year par bond
+    next(s for s in app.selectbox if s.label == "计算实验").set_value("EXP-15").run(timeout=30)
+    next(s for s in app.selectbox if s.label == "预设").set_value("现金流两次变号：两个 IRR").run(timeout=30)
+    assert not app.exception and any("IRR 规则不适用" in w.value for w in app.warning)

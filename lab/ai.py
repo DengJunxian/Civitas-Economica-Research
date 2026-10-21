@@ -342,13 +342,14 @@ class ScenarioDraft:
 def _draft_messages(goal: str, course: dict) -> list[dict]:
     catalog = load_catalog()
     linked = catalog.scenarios_for_course(course["code"])
-    example_id = next((e["id"] for e in linked if e["runnable"]), "EXP-05")
+    example_id = next((e["id"] for e in linked if e["kind"] == "simulation"), "EXP-05")
     system = DRAFT_SYSTEM.format(
         world=SUPPORTED_WORLD, decisions=", ".join(SUPPORTED_DECISIONS), topologies=", ".join(SUPPORTED_TOPOLOGIES),
         observables=", ".join(OBSERVABLES), outcomes=", ".join(OUTCOMES), warn_runs=LIMITS["warn_runs"],
         planned=", ".join(sorted({*PLANNED_EVENTS, *OTHER_UNSUPPORTED_EVENTS})),
         schema=json.dumps(ScenarioSpec.model_json_schema(), ensure_ascii=False, separators=(",", ":")))
-    linked_text = "；".join(f"{e['id']} {e['title']}（{'可运行' if e['runnable'] else '需要 ' + e['engine']}）" for e in linked) or "无"
+    status = {"simulation": "可运行", "calculator": "确定性计算实验，不是仿真场景"}
+    linked_text = "；".join(f"{e['id']} {e['title']}（{status.get(e['kind']) or '需要 ' + e['engine']}）" for e in linked) or "无"
     example = json.dumps(catalog.scenarios[example_id].model_dump(mode="json"), ensure_ascii=False)
     user = (f"课程：{course['code']} {course['name']}（{course['program']}）\n"
             f"拟选知识点：{'；'.join(course['knowledge_points'])}\n"

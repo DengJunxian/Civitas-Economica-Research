@@ -33,11 +33,12 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 import lab.ai as lab_ai
 from core.reproducibility import utc_now_iso
+from lab.calculators import compute
 from lab.capability import check_scenario
 from lab.catalog import load_catalog
 from lab.compare import comparison_frames, evidence_card
 from lab.compiler import scenario_hash
-from lab.export import evidence_report, pilot_record, scenario_card, student_feedback, teacher_guide, worksheet
+from lab.export import calculator_report, evidence_report, pilot_record, scenario_card, student_feedback, teacher_guide, worksheet
 from lab.observables import OBSERVABLES, OUTCOMES, STEP_COLUMNS
 from lab.service import LAB_MANIFEST, list_comparisons, load_manifest, run_scenario, verify_comparison
 from lab.specs import ScenarioSpec
@@ -81,6 +82,13 @@ class ExplainRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str
     metric: str | None = None
+
+
+class CalculationRequest(BaseModel):
+    """Parameters are merged as spec defaults <- preset <- params."""
+    model_config = ConfigDict(extra="forbid")
+    preset: str | None = None
+    params: dict = Field(default_factory=dict)
 
 
 def _clean(value):
@@ -237,10 +245,48 @@ def create_app(output_root: str | Path | None = None, *, token: str | None = Non
         catalog = load_catalog()
         if scenario_id not in {e["id"] for e in catalog.index}:
             raise HTTPException(404, "unknown scenario")
-        spec = catalog.scenarios.get(scenario_id)
-        return {"entry": catalog.entry(scenario_id), "runnable": spec is not None,
+        spec, calculator = catalog.scenarios.get(scenario_id), catalog.calculators.get(scenario_id)
+        return {"entry": catalog.entry(scenario_id), "kind": catalog.kind(scenario_id),
+                "runnable": catalog.kind(scenario_id) is not None,
                 "spec": spec.model_dump(mode="json") if spec else None,
-                "scenario_hash": scenario_hash(spec) if spec else None}
+                "scenario_hash": scenario_hash(spec) if spec else None,
+                "calculator": calculator.model_dump(mode="json") if calculator else None}
+
+    def calculation(lab_id: str, request: CalculationRequest):
+        catalog = load_catalog()
+        if lab_id not in catalog.calculators:
+            raise HTTPException(404, "unknown calculator lab")
+        spec = catalog.calculators[lab_id]
+        presets = {p.name: p.params for p in spec.presets}
+        if request.preset is not None and request.preset not in presets:
+            raise HTTPException(422, f"unknown preset; available: {', '.join(presets)}")
+        try:
+            return spec, compute(spec.calculator, {**spec.defaults, **presets.get(request.preset, {}), **request.params})
+        except ValidationError as exc:
+            raise HTTPException(422, exc.errors(include_url=False, include_context=False)) from None
+
+    @app.get("/v1/calculators")
+    def calculators():
+        return [{"lab_id": c.lab_id, "title": c.title, "calculator": c.calculator, "course_codes": list(c.course_codes),
+                 "phase": c.phase, "presets": [p.name for p in c.presets], "review_status": c.review.status,
+                 "origin": "deterministic_calculation"} for c in load_catalog().calculators.values()]
+
+    @app.get("/v1/calculators/{lab_id}")
+    def calculator(lab_id: str):
+        catalog = load_catalog()
+        if lab_id not in catalog.calculators:
+            raise HTTPException(404, "unknown calculator lab")
+        return catalog.calculators[lab_id].model_dump(mode="json")
+
+    @app.post("/v1/calculators/{lab_id}/compute")
+    def calculator_compute(lab_id: str, request: CalculationRequest):
+        """确定性公式计算：不是仿真；相同输入总得到相同结果（params_hash）。"""
+        return _clean(calculation(lab_id, request)[1])
+
+    @app.post("/v1/calculators/{lab_id}/report")
+    def calculator_result_report(lab_id: str, request: CalculationRequest, fmt: Literal["md", "pdf"] = Query("md", alias="format")):
+        spec, computed = calculation(lab_id, request)
+        return markdown(calculator_report(spec, computed), f"{lab_id}-result", fmt)
 
     @app.get("/v1/scenarios/{scenario_id}/card")
     def card(scenario_id: str, fmt: Literal["md", "pdf"] = Query("md", alias="format")):

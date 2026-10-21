@@ -97,9 +97,16 @@ class CapabilityReport:
                 "agent_steps": self.agent_steps, "issues": [asdict(i) for i in self.issues]}
 
 
+# Engines whose formula part is already available as a deterministic calculator lab.
+CALCULATOR_LABS = {"bond_valuation": "EXP-17", "firm_finance": "EXP-15"}
+
+
 def _engine_message(engine: str) -> str:
     name, phase, scenarios = PLANNED_ENGINES[engine]
-    return f"需要{name}（规划 {phase}，{scenarios}）；当前单资产撮合内核不能代替该机制"
+    message = f"需要{name}（规划 {phase}，{scenarios}）；当前单资产撮合内核不能代替该机制"
+    if engine in CALCULATOR_LABS:
+        message += f"。公式部分可先使用确定性计算实验 {CALCULATOR_LABS[engine]}（不是多智能体仿真）"
+    return message
 
 
 def ordered_events(events: tuple[EventSpec, ...]) -> list[EventSpec]:

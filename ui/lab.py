@@ -15,11 +15,13 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from lab.ai import ai_usage, draft_scenario, explain_comparison, load_draft_yaml
+from lab.calculators import compute
 from lab.capability import (OTHER_UNSUPPORTED_EVENTS, PLANNED_EVENTS, SUPPORTED_EVENTS, SUPPORTED_TOPOLOGIES,
                             CapabilityReport, check_scenario)
 from lab.catalog import load_catalog
 from lab.compare import comparison_frames, evidence_card, factorial_interaction, group_summary, load_scenario_of, paired_differences
-from lab.export import evidence_report, pilot_record, scenario_card, student_feedback, teacher_guide, worksheet
+from lab.export import (calculator_report, evidence_report, pilot_record, scenario_card, student_feedback, teacher_guide,
+                        worksheet)
 from lab.observables import OBSERVABLES, OUTCOMES, STEP_COLUMNS
 from lab.service import list_comparisons, load_manifest, run_scenario, verify_comparison
 from lab.specs import ScenarioSpec
@@ -113,9 +115,12 @@ def render_course_center() -> None:
         cols[0].markdown(f"**{entry['id']}**")
         cols[1].write(f"{entry['title']}（{entry['module']}）")
         cols[2].write(entry["phase"])
-        if entry["runnable"]:
+        if entry["kind"] == "simulation":
             cols[3].button("在场景实验室打开", key=f"open-{code}-{entry['id']}",
                            on_click=_goto("场景实验室", lab_scenario=entry["id"]))
+        elif entry["kind"] == "calculator":
+            cols[3].button("在计算实验室打开", key=f"open-{code}-{entry['id']}",
+                           on_click=_goto("计算实验室", lab_calculator=entry["id"]))
         else:
             cols[3].caption(f"未开放：需要 {entry['status']}（{entry['engine']}）")
     for lesson in catalog.lessons_for_course(code):
@@ -388,3 +393,100 @@ def render_ai_desk(output_root: Path) -> None:
         _render_draft_desk(output_root)
     with explain_tab:
         _render_explain_desk(output_root)
+
+
+def _calculator_params(spec, base: dict, key: str) -> dict:
+    if spec.calculator == "bond":
+        c = st.columns(5)
+        frequencies = [1, 2, 4]
+        return {"face": c[0].number_input("面值", 1.0, 1e6, float(base["face"]), key=f"{key}-face"),
+                "coupon_rate": c[1].number_input("票面利率（%）", 0.0, 100.0, base["coupon_rate"] * 100, step=0.25, key=f"{key}-cr") / 100,
+                "years": int(c[2].number_input("期限（年）", 1, 100, int(base["years"]), key=f"{key}-years")),
+                "frequency": c[3].selectbox("每年付息", frequencies, index=frequencies.index(base["frequency"]), key=f"{key}-freq"),
+                "yield_rate": c[4].number_input("到期收益率（%）", -49.0, 100.0, base["yield_rate"] * 100, step=0.25, key=f"{key}-y") / 100}
+    rate = st.number_input("贴现率（%）", -99.0, 100.0, base["discount_rate"] * 100, step=0.5, key=f"{key}-rate") / 100
+    frame = pd.DataFrame([{"项目": p["name"], "现金流（第 0 期起，逗号分隔）": ", ".join(f"{c:g}" for c in p["cash_flows"])}
+                          for p in base["projects"]])
+    edited = st.data_editor(frame, num_rows="dynamic", use_container_width=True, key=f"{key}-projects")
+    projects = []
+    for row in edited.itertuples(index=False):
+        name, flows = row[0], row[1]
+        if isinstance(name, str) and name.strip() and isinstance(flows, str) and flows.strip():
+            projects.append({"name": name.strip(), "cash_flows": [float(x) for x in flows.replace("，", ",").split(",") if x.strip()]})
+    return {"discount_rate": rate, "projects": projects}
+
+
+def _bond_results(result: dict) -> None:
+    m = result["measures"]
+    cols = st.columns(5)
+    for col, (label, value) in zip(cols, [("价格", m["price"]), ("麦考利久期", m["macaulay_duration"]),
+                                          ("修正久期", m["modified_duration"]), ("凸性", m["convexity"]), ("DV01", m["dv01"])]):
+        col.metric(label, f"{value:.4f}")
+    curve = pd.DataFrame(result["price_yield_curve"])
+    fig = go.Figure()
+    fig.add_scatter(x=curve["yield"] * 100, y=curve["price"], mode="lines", name="精确价格", line={"color": GROUP_COLORS[0]})
+    fig.add_scatter(x=curve["yield"] * 100, y=curve["duration_line"], mode="lines", name="久期线性近似",
+                    line={"color": GROUP_COLORS[1], "dash": "dash"})
+    st.plotly_chart(apply_dark_theme(fig, title="价格—收益率曲线（凸性 = 曲线与切线之间的距离）", height=340,
+                                     xaxis_title="到期收益率（%）", yaxis_title="价格"), use_container_width=True)
+    shocks = pd.DataFrame(result["shocks"]).rename(columns={
+        "shock_bp": "变动（bp）", "new_price": "新价格", "exact_change": "精确变化", "duration_estimate": "久期估计",
+        "duration_error": "久期误差", "duration_convexity_estimate": "久期+凸性估计", "duration_convexity_error": "久期+凸性误差"})
+    st.dataframe(shocks, hide_index=True, use_container_width=True)
+
+
+def _budget_results(params: dict, result: dict) -> None:
+    rows = [{"项目": p["name"], "NPV": p["npv"], "IRR": "、".join(f"{r:.2%}" for r in p["irr"]) or "无",
+             "回收期": p["payback"], "贴现回收期": p["discounted_payback"], "盈利指数": p["profitability_index"],
+             "NPV 规则": {"accept": "接受", "reject": "拒绝", "indifferent": "无差异（NPV = 0）"}[p["decision"]]} for p in result["projects"]]
+    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+    for p in result["projects"]:
+        if not p["irr_unique"]:
+            st.warning(f"{p['name']}：现金流变号 {p['sign_changes']} 次，IRR 有 {len(p['irr'])} 个（或不存在），IRR 规则不适用，应以 NPV 判断。")
+    profile = pd.DataFrame(result["npv_profile"])
+    fig = go.Figure()
+    for index, project in enumerate(p["name"] for p in result["projects"]):
+        fig.add_scatter(x=profile["rate"] * 100, y=profile[project], mode="lines", name=project,
+                        line={"color": GROUP_COLORS[index % len(GROUP_COLORS)]})
+    fig.add_hline(y=0, line_color="rgba(148,163,184,0.5)")
+    fig.add_vline(x=params["discount_rate"] * 100, line_dash="dot", line_color="rgba(148,163,184,0.7)")
+    st.plotly_chart(apply_dark_theme(fig, title="净现值曲线（与横轴交点 = IRR；两曲线交点 = 交叉利率）", height=340,
+                                     xaxis_title="贴现率（%）", yaxis_title="NPV"), use_container_width=True)
+    for c in result["crossover_rates"]:
+        if c["rates"]:
+            st.info(f"{c['projects'][0]} 与 {c['projects'][1]} 的交叉利率：{'、'.join(f'{r:.2%}' for r in c['rates'])}；"
+                    "贴现率在其两侧时 NPV 排序相反。")
+    st.write(f"按 NPV 最优：**{result['best_by_npv']}**；按 IRR 最优：**{result['best_by_irr'] or '无法比较'}**。互斥项目应以 NPV 为准。")
+
+
+def render_calculator_lab() -> None:
+    """Deterministic formula labs (plan 10.1); clearly separate from agent simulations."""
+    fmt = _handout_format()
+    catalog = load_catalog()
+    ids = list(catalog.calculators)
+    default = st.session_state.get("lab_calculator", ids[0])
+    lid = st.selectbox("计算实验", ids, index=ids.index(default) if default in ids else 0,
+                       format_func=lambda x: f"{x} {catalog.calculators[x].title}")
+    spec = catalog.calculators[lid]
+    st.info("确定性公式计算：结果完全由输入与教科书公式决定，相同输入总得到相同结果。这里没有投资者、订单或撮合，不是多智能体仿真。")
+    st.subheader(spec.title)
+    st.markdown(f"**研究问题**：{spec.question}")
+    st.write("课程：" + "、".join(f"{c} {catalog.course(c)['name']}" for c in spec.course_codes)
+             + f"　·　{spec.module} · {spec.phase} · v{spec.version} · {REVIEW[spec.review.status]}")
+    with st.expander("教学目标与假设", expanded=False):
+        st.markdown("**教学目标**\n\n" + "\n".join(f"- {o}" for o in spec.objectives))
+        st.markdown("**假设**\n\n" + "\n".join(f"- {a}" for a in spec.assumptions))
+    _limitations(spec)
+    presets = {"默认": {}} | {p.name: p.params for p in spec.presets}
+    preset = st.selectbox("预设", list(presets), key=f"preset-{lid}")
+    params = _calculator_params(spec, {**spec.defaults, **presets[preset]}, f"{lid}-{preset}")
+    try:
+        computed = compute(spec.calculator, params)
+    except ValueError as exc:
+        st.error(f"输入无效：{exc}")
+        return
+    (_bond_results(computed["result"]) if spec.calculator == "bond" else _budget_results(computed["params"], computed["result"]))
+    st.caption(f"来源 {computed['origin']} · {computed['calculator']} v{computed['calculator_version']} · params_hash {computed['params_hash'][:12]}")
+    downloads = st.columns(2)
+    downloads[0].download_button("结果 JSON", json.dumps(computed, ensure_ascii=False, indent=2), f"{lid}-result.json")
+    _handout(downloads[1], f"结果报告 {fmt}", calculator_report(spec, computed), f"{lid}-result", fmt)

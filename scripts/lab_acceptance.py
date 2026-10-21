@@ -8,6 +8,9 @@ One command, offline, writes an acceptance receipt:
   real orders (or the receipt records why it has no trades);
 - a negative suite of illegal scenarios must all be rejected by the gate;
 - 64-agent x 30-step runs are timed for the classroom latency target;
+- every deterministic calculator preset computes and the formula identities
+  hold (par bond prices at face, zero-coupon duration equals maturity,
+  duration/convexity equal numerical derivatives, NPV is zero at each IRR);
 - network connections are blocked and LLM API keys removed for the whole run,
   so passing also shows the P1 classroom flow needs no external service.
 
@@ -153,6 +156,32 @@ def negative_gate_suite(receipt: dict) -> None:
     receipt["checks"]["negative_gate"] = {"ok": not escaped, "cases": len(results), "not_rejected": escaped}
 
 
+def calculator_checks(receipt: dict) -> None:
+    from lab.calculators import BondParams, bond_measures, bond_price, compute, npv
+    from lab.catalog import load_catalog
+
+    results, problems = {}, []
+    for lab_id, spec in load_catalog().calculators.items():
+        presets = {"默认": {}} | {p.name: p.params for p in spec.presets}
+        for name, params in presets.items():
+            computed = compute(spec.calculator, {**spec.defaults, **params})
+            results[f"{lab_id}/{name}"] = computed["params_hash"]
+            if spec.calculator == "capital_budgeting":
+                for project, flows in zip(computed["result"]["projects"], computed["params"]["projects"]):
+                    if any(abs(npv(r, flows["cash_flows"])) > 1e-7 for r in project["irr"]):
+                        problems.append(f"{lab_id}/{name}: NPV not zero at an IRR of {project['name']}")
+    par = BondParams(coupon_rate=0.06, yield_rate=0.06, years=20, frequency=2)
+    zero = BondParams(coupon_rate=0.0, yield_rate=0.05, years=12)
+    m, h = bond_measures(par), 1e-5
+    numeric_duration = -(bond_price(par, 0.06 + h) - bond_price(par, 0.06 - h)) / (2 * h) / m["price"]
+    identities = {"par_bond_price_equals_face": abs(m["price"] - 100) < 1e-9,
+                  "zero_coupon_duration_equals_maturity": abs(bond_measures(zero)["macaulay_duration"] - 12) < 1e-12,
+                  "modified_duration_matches_derivative": abs(m["modified_duration"] / numeric_duration - 1) < 1e-7}
+    problems += [name for name, ok in identities.items() if not ok]
+    receipt["calculators"] = {"presets": results, "identities": identities, "problems": problems}
+    receipt["checks"]["calculators"] = {"ok": not problems, "presets": len(results)}
+
+
 def performance(folder: Path, receipt: dict, repeats: int) -> None:
     from core.experiments.config import ExperimentConfig
     from core.experiments.runner import ExperimentRunner
@@ -192,6 +221,7 @@ def main() -> int:
     try:
         scenario_checks(folder, receipt)
         negative_gate_suite(receipt)
+        calculator_checks(receipt)
         performance(folder, receipt, args.latency_runs)
         receipt["status"] = "passed" if all(c["ok"] for c in receipt["checks"].values()) else "failed"
     except BaseException as exc:

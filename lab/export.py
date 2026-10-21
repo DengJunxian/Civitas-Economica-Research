@@ -95,7 +95,7 @@ def teacher_guide(lesson: LessonSpec, catalog: Catalog) -> str:
     parts += ["## 解释规范\n\n" + _bullets(lesson.interpretation_rules)] if lesson.interpretation_rules else []
     parts += [f"## 机制边界\n\n{lesson.mechanism_boundary}"] if lesson.mechanism_boundary else []
     for sid in lesson.scenarios:
-        parts.append(f"## {sid} 模型限制\n\n" + _bullets(catalog.scenarios[sid].limitations))
+        parts.append(f"## {sid} 模型限制\n\n" + _bullets(catalog.unit(sid).limitations))
     parts += ["## 评分量表\n\n" + _rubric(lesson), FOOTER]
     return "\n\n".join(parts)
 
@@ -115,7 +115,7 @@ def worksheet(lesson: LessonSpec, catalog: Catalog, level: Level) -> str:
     parts = [
         f"# 学生工作纸 · {lesson.title}（{LEVELS[level]}）",
         "课程内匿名编号：________　小组：________　日期：________",
-        "## 研究问题\n\n" + _bullets(f"{sid}：{catalog.scenarios[sid].question}" for sid in lesson.scenarios),
+        "## 研究问题\n\n" + _bullets(f"{sid}：{catalog.unit(sid).question}" for sid in lesson.scenarios),
         "## 课前预测（运行前填写）\n\n" + (lesson.guidance.prediction if lesson.guidance else "写下你对结果的预测及理由。")
         + "\n\n我的预测：\n\n&nbsp;\n",
     ]
@@ -221,3 +221,52 @@ def student_feedback(lesson: LessonSpec, catalog: Catalog) -> str:
         "## 开放问题\n\n**本课中对你最有帮助的一条证据是什么？**\n\n&nbsp;\n\n**你仍然困惑的地方是什么？**\n\n&nbsp;\n",
         FOOTER,
     ])
+
+
+def _pct(value) -> str:
+    return "—" if value is None else f"{value * 100:.4g}%"
+
+
+def calculator_report(spec, computed: dict) -> str:
+    """Results of one deterministic calculation; reproducible from params + calculator version."""
+    params, result = computed["params"], computed["result"]
+    parts = [
+        f"# 计算结果 · {spec.lab_id} {spec.title}",
+        _table(["项目", "内容"], [["来源", "确定性公式计算（deterministic_calculation），不是多智能体仿真"],
+                                ["计算器", f"{computed['calculator']} v{computed['calculator_version']}"],
+                                ["params_hash", computed["params_hash"]], ["课程", "、".join(spec.course_codes)],
+                                ["审核状态", REVIEW[spec.review.status]]]),
+        f"**研究问题**：{spec.question}",
+    ]
+    if computed["calculator"] == "bond":
+        m = result["measures"]
+        parts += [
+            "## 输入\n\n" + _table(["参数", "值"], [["面值", params["face"]], ["票面利率", _pct(params["coupon_rate"])],
+                                                ["期限（年）", params["years"]], ["每年付息次数", params["frequency"]],
+                                                ["到期收益率", _pct(params["yield_rate"])]]),
+            "## 价格与风险度量\n\n" + _table(["度量", "值"], [["价格", m["price"]], ["麦考利久期（年）", m["macaulay_duration"]],
+                                                     ["修正久期", m["modified_duration"]], ["凸性", m["convexity"]],
+                                                     ["DV01（收益率变动 1bp 的价格变化）", m["dv01"]], ["当期收益率", _pct(m["current_yield"])]]),
+            "## 收益率平行移动：精确重估值与近似\n\n" + _table(
+                ["变动（bp）", "新价格", "精确变化", "久期估计", "久期误差", "久期+凸性估计", "久期+凸性误差"],
+                [[r["shock_bp"], r["new_price"], r["exact_change"], r["duration_estimate"], r["duration_error"],
+                  r["duration_convexity_estimate"], r["duration_convexity_error"]] for r in result["shocks"]]),
+        ]
+    else:
+        parts.append(f"贴现率：{_pct(params['discount_rate'])}")
+        rows = [[p["name"], "，".join(_num(float(c)) for c in next(x["cash_flows"] for x in params["projects"] if x["name"] == p["name"])),
+                 p["npv"], "、".join(_pct(r) for r in p["irr"]) or "无", p["payback"], p["discounted_payback"],
+                 p["profitability_index"], {"accept": "接受", "reject": "拒绝", "indifferent": "无差异（NPV = 0）"}[p["decision"]]] for p in result["projects"]]
+        parts.append("## 项目评价\n\n" + _table(["项目", "现金流", "NPV", "IRR", "回收期", "贴现回收期", "盈利指数", "NPV 规则"], rows))
+        for p in result["projects"]:
+            if not p["irr_unique"]:
+                parts.append(f"**{p['name']}**：现金流变号 {p['sign_changes']} 次，IRR 有 {len(p['irr'])} 个（或不存在），IRR 规则不适用，应以 NPV 判断。")
+        for c in result["crossover_rates"]:
+            if c["rates"]:
+                parts.append(f"{c['projects'][0]} 与 {c['projects'][1]} 的交叉利率：{'、'.join(_pct(r) for r in c['rates'])}；"
+                             "贴现率在交叉利率两侧时，NPV 排序会改变。")
+        parts.append(f"按 NPV 最优：{result['best_by_npv']}；按 IRR 最优：{result['best_by_irr'] or '无法比较（存在非唯一 IRR）'}。"
+                     "互斥项目应以贴现率下的 NPV 为准。")
+    parts += ["## 假设\n\n" + _bullets(spec.assumptions), "## 局限\n\n" + _bullets(spec.limitations),
+              "> 确定性公式计算：结果完全由输入与公式决定，相同输入总得到相同结果；不是仿真、市场预测或投资建议。"]
+    return "\n\n".join(parts)

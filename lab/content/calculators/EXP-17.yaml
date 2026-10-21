@@ -1,0 +1,29 @@
+spec_version: "0.1"
+lab_id: EXP-17
+version: 0.1.0
+title: 利率变化、债券价格与久期（确定性计算）
+module: E6
+phase: P2
+calculator: bond
+course_codes: ["107435", "250235"]
+levels: [undergraduate, graduate]
+question: 收益率变化时债券价格怎样变化？久期和凸性对价格变化的近似有多准，什么时候会失效？
+objectives:
+  - 能计算固定利率债券的价格、麦考利久期、修正久期、凸性与 DV01
+  - 能比较精确重估值与久期、久期 + 凸性近似的误差，解释凸性的作用
+  - 能说明票息、期限对久期的影响，以及近似只适用于小幅平行移动
+assumptions:
+  - 无违约、无内嵌期权的固定利率债券，按每期复利的到期收益率贴现
+  - 收益率曲线平坦且平行移动；估值日恰在付息日，不计应计利息
+limitations:
+  - 确定性公式计算，不是多智能体仿真，也不是市场价格预测或投资建议
+  - 未考虑信用风险、流动性、税收、应计利息与非平行的收益率曲线变化
+  - 久期与凸性近似只对小幅、平行的收益率变化可靠；大幅变化须看精确重估值
+defaults: {face: 100, coupon_rate: 0.05, years: 10, frequency: 1, yield_rate: 0.05}
+presets:
+  - {name: 10 年期平价债, params: {coupon_rate: 0.05, years: 10, yield_rate: 0.05}}
+  - {name: 10 年期零息债, params: {coupon_rate: 0.0, years: 10, yield_rate: 0.05}}
+  - {name: 30 年期低票息债（凸性明显）, params: {coupon_rate: 0.02, years: 30, yield_rate: 0.04}}
+  - {name: 3 年期教科书例题, params: {coupon_rate: 0.10, years: 3, yield_rate: 0.12}}
+  - {name: 半年付息 5 年期, params: {coupon_rate: 0.04, years: 5, frequency: 2, yield_rate: 0.045}}
+review: {status: pending_teacher_review}

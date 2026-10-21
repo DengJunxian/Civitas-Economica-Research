@@ -39,8 +39,16 @@
     "hash": "3328442b57aaa022ed393c46928eb776e45f2cb89a2754d93b82f863b3084549",
     "version": "0.1.0"
   },
+  "LESSON-CF-001": {
+    "hash": "95b3b53eebdf70740971a091968061e1f7d3efe536d35431508950a462b72719",
+    "version": "0.1.0"
+  },
   "LESSON-EMP-001": {
     "hash": "f053fb30f27ca9ce805161a8c673d5b6a41a3a6d936047f3329d3bb6583c8de5",
+    "version": "0.1.0"
+  },
+  "LESSON-FI-001": {
+    "hash": "d83f74bc83759f68000b108bf46cb5fa17fa71bbab33e39f02f2c65bdc30f488",
     "version": "0.1.0"
   },
   "LESSON-MKT-001": {
@@ -61,6 +69,14 @@
   },
   "LESSON-MKT-005": {
     "hash": "9dff2d7c06feb9296ef48d5dfffa4b7382a82063b8fd95f380547977b9bbb22b",
+    "version": "0.1.0"
+  },
+  "calc:EXP-15": {
+    "hash": "0ab81f45efa5b3800c7474779899bb1dbe1f8e2f733d932755a8fd410e0d4cb8",
+    "version": "0.1.0"
+  },
+  "calc:EXP-17": {
+    "hash": "d4d1ffc74b42e8750d9d59b6757f527f4da88309499e860ea6def2678dbe1f11",
     "version": "0.1.0"
   }
 }
