@@ -1,0 +1,50 @@
+spec_version: "0.1"
+scenario_id: EXP-08
+version: 0.1.0
+title: 下调印花税会改变市场吗？
+module: E1
+phase: P1
+course_codes: ["107349", "214822"]
+levels: [undergraduate, graduate]
+question: 第 20 步把卖方印花税从 0.05% 下调到 0.025%，模型中的成交与费用会有什么差异？
+objectives:
+  - 能用配对重跑陈述模型条件下的差异，并区分费用变化与行为变化
+  - 能说明标准模型中税率通过什么通道（结算现金）影响后续交易
+  - 能说明为什么不能据此推出现实政策效果
+assumptions:
+  - 基准组印花税 0.0005；干预组第 20 步通过 tax_change 改为 0.00025
+  - 印花税只对卖方收取，进入独立费用账户
+limitations:
+  - 标准向量决策公式不读取印花税率；税率只通过卖方结算现金影响此后的可用资金，模型中没有投资者对税费的直接行为响应
+  - 这里的"降税"严格指单资产卖方印花税，不是公司税、货币政策或财政乘数
+  - 结果只代表该模型、参数与种子集合，不是现实政策的因果估计
+evidence:
+  - 两组第 20 步前的路径应完全一致（配对检查）
+  - 累计费用与成交量、成交笔数的配对差异
+world:
+  type: single_asset_orderbook
+  agents: 64
+  steps: 30
+  initial_price: 3000.0
+  decision_mode: vectorized
+  market: {stamp_duty: 0.0005}
+  social: {topology: small_world, neighbors: 6}
+comparison:
+  pairing: matched_seed
+  seeds: [41, 42, 43, 44, 45]
+  reference_group: A
+  groups:
+    - id: A
+      label: 基准税率
+      events: []
+    - id: T
+      label: 第 20 步降税
+      events:
+        - {step: 20, kind: tax_change, value: 0.00025}
+observables: [price, volume, trade_count, fees, orders]
+outcome:
+  primary: cumulative_volume
+  secondary: [fees_total, trade_count_total, final_return]
+source_policy: {required_origin: simulation, allow_teaching_example_as_run: false}
+approval: {require_teacher_confirmation: true}
+review: {status: pending_teacher_review}

@@ -1,0 +1,40 @@
+# course_map_v1. Course names, codes and categories follow the two training
+# plans ([S1] undergraduate pp.4-6, [S2] master pp.1-2). Knowledge points and
+# scenario links are proposed mappings (plan v1.0 sections 2.3-2.5) and must be
+# checked against each teacher's syllabus before classroom use.
+# priority: A core courses / B featured electives / C supporting methods.
+- {code: "101560", name: 中级微观经济学, program: undergraduate, category: 学科共同基础课, priority: A, source: S1, knowledge_points: [市场交易、供需与均衡的局部机制], scenarios: [EXP-01, EXP-02]}
+- {code: "101562", name: 中级宏观经济学, program: undergraduate, category: 学科共同基础课, priority: A, source: S1, knowledge_points: [宏观冲击、预期与政策传导], scenarios: [EXP-21, EXP-22]}
+- {code: "102502", name: 货币银行学, program: undergraduate, category: 学科共同基础课, priority: A, source: S1, knowledge_points: [银行资产负债、流动性与信用创造], scenarios: [EXP-19, EXP-20, EXP-21]}
+- {code: "102041", name: 财政学, program: undergraduate, category: 学科共同基础课, priority: A, source: S1, knowledge_points: [税收与财政冲击的经济传导], scenarios: [EXP-22]}
+- {code: "103213", name: 计量经济学, program: undergraduate, category: 学科共同基础课, priority: C, source: S1, knowledge_points: [实验对照、统计检验与外推局限], scenarios: [EXP-09, EXP-10, EXP-27]}
+- {code: "107429", name: 投资学, program: undergraduate, category: 专业基础课, priority: A, source: S1, knowledge_points: [风险偏好、交易决策与资产配置], scenarios: [EXP-04, EXP-05, EXP-13, EXP-14]}
+- {code: "107340", name: 公司金融, program: undergraduate, category: 专业基础课, priority: A, source: S1, knowledge_points: [投资项目、融资与资本结构], scenarios: [EXP-15, EXP-16]}
+- {code: "102927", name: 金融计量学, program: undergraduate, category: 专业基础课, priority: C, source: S1, knowledge_points: [事件窗口、分布与稳健性检验], scenarios: [EXP-10, EXP-27]}
+- {code: "107349", name: 金融机构与金融市场, program: undergraduate, category: 专业基础课, priority: A, source: S1, knowledge_points: [订单簿、价格发现、流动性、停复牌], scenarios: [EXP-01, EXP-02, EXP-05, EXP-07, EXP-08, EXP-09]}
+- {code: "107435", name: 固定收益证券, program: undergraduate, category: 专业基础课, priority: A, source: S1, knowledge_points: [利率、债券估值、久期与对冲], scenarios: [EXP-17, EXP-18]}
+- {code: "108272", name: 博弈论与信息经济学, program: undergraduate, category: 专业基础课, priority: A, source: S1, knowledge_points: [策略交互、信息传播、不对称信息], scenarios: [EXP-05, EXP-06, EXP-12]}
+- {code: "108270", name: 金融工程学, program: undergraduate, category: 专业基础课, priority: A, source: S1, knowledge_points: [衍生品定价与套期保值], scenarios: [EXP-18]}
+- {code: "107470", name: 国际经济学, program: undergraduate, category: 待核验, priority: A, source: S1, knowledge_points: [汇率冲击与开放经济传导], scenarios: [EXP-26]}
+- {code: "107452", name: 行为金融学, program: undergraduate, category: 个性化专业方向, priority: B, source: S1, knowledge_points: [异质性与信息传播], scenarios: [EXP-06]}
+- {code: "107442", name: 实验金融学, program: undergraduate, category: 个性化专业方向, priority: B, source: S1, knowledge_points: [异质性、信息传播与对照实验], scenarios: [EXP-05, EXP-10]}
+- {code: "107450", name: 金融模拟与实验, program: undergraduate, category: 个性化专业方向, priority: B, source: S1, knowledge_points: [多智能体世界与系统涌现], scenarios: [EXP-01, EXP-05, EXP-06, EXP-09]}
+- {code: "108441", name: 金融与经济中的复杂网络分析, program: undergraduate, category: 个性化专业方向, priority: B, source: S1, knowledge_points: [传播网络与系统涌现], scenarios: [EXP-06, EXP-23]}
+- {code: "107446", name: 金融风险管理, program: undergraduate, category: 个性化专业方向, priority: B, source: S1, knowledge_points: [多资产风险], scenarios: [EXP-13, EXP-14]}
+- {code: "107454", name: 基金管理, program: undergraduate, category: 个性化专业方向, priority: B, source: S1, knowledge_points: [组合适配与机构行为], scenarios: [EXP-14, EXP-23]}
+- {code: "107449", name: 金融监管, program: undergraduate, category: 个性化专业方向, priority: B, source: S1, knowledge_points: [监管措施与交易中断], scenarios: [EXP-07]}
+- {code: "107443", name: 商业银行经营管理, program: undergraduate, category: 个性化专业方向, priority: B, source: S1, knowledge_points: [银行机制], scenarios: [EXP-20]}
+- {code: "214820", name: 投资学, program: graduate, category: 学位基础课, priority: A, source: S2, knowledge_points: [异质决策、多资产分散化、研究设计], scenarios: [EXP-04, EXP-13, EXP-14]}
+- {code: "214828", name: 公司金融, program: graduate, category: 学位基础课, priority: A, source: S2, knowledge_points: [项目投资、融资、财务状态], scenarios: [EXP-15, EXP-16]}
+- {code: "214822", name: 金融机构与金融市场, program: graduate, category: 学位基础课, priority: A, source: S2, knowledge_points: [微观结构、流动性与监管措施], scenarios: [EXP-01, EXP-02, EXP-05, EXP-07, EXP-08]}
+- {code: "214827", name: 金融衍生工具分析, program: graduate, category: 学位基础课, priority: A, source: S2, knowledge_points: [衍生工具风险暴露和对冲机制], scenarios: [EXP-18]}
+- {code: "214813", name: 金融伦理与职业道德, program: graduate, category: 学位基础课, priority: C, source: S2, knowledge_points: [AI 解释责任、金融伦理与模型风险], scenarios: [], cross_cutting: true}
+- {code: "250235", name: 固定收益证券, program: graduate, category: 专业必修课, priority: A, source: S2, knowledge_points: [债券估值、久期、利率风险], scenarios: [EXP-17, EXP-18]}
+- {code: "214831", name: 智能财务报表分析, program: graduate, category: 专业必修课, priority: A, source: S2, knowledge_points: [财务信号与企业状况分析], scenarios: [EXP-16]}
+- {code: "214829", name: 机器学习统计基础, program: graduate, category: 专业必修课, priority: C, source: S2, knowledge_points: [模型评估、统计检验及数据泄漏], scenarios: [EXP-27]}
+- {code: "214830", name: 机器学习与大模型, program: graduate, category: 专业必修课, priority: C, source: S2, knowledge_points: [智能体可靠性、输出与验证], scenarios: [EXP-11, EXP-27]}
+- {code: "214834", name: 人工智能与投资研究, program: graduate, category: 专业选修课, priority: B, source: S2, knowledge_points: [AI 决策评价], scenarios: [EXP-11]}
+- {code: "214832", name: 平台经济中的数字金融, program: graduate, category: 专业选修课, priority: B, source: S2, knowledge_points: [平台网络外部性], scenarios: [EXP-25]}
+- {code: "214835", name: 财富管理与智能投顾, program: graduate, category: 专业选修课, priority: B, source: S2, knowledge_points: [组合适配与风险画像], scenarios: [EXP-14, EXP-24]}
+- {code: "214833", name: 中国宏观经济分析, program: graduate, category: 专业选修课, priority: B, source: S2, knowledge_points: [政策机制及模型反事实], scenarios: [EXP-21]}
+- {code: "214836", name: 金融科技与数据治理, program: graduate, category: 专业选修课, priority: B, source: S2, knowledge_points: [数据质量与治理], scenarios: [], cross_cutting: true}

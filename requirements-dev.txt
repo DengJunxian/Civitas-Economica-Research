@@ -1,4 +1,5 @@
 -r requirements-ui.txt
 -r requirements-llm.txt
+-r requirements-api.txt
 pytest>=8.0
 mesa>=3.0

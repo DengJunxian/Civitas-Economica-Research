@@ -1,0 +1,4 @@
+# Optional HTTP API for Civitas Lab (lab/api.py).
+-r requirements-core.txt
+fastapi>=0.110
+uvicorn>=0.27

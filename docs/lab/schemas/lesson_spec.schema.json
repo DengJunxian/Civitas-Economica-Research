@@ -1,0 +1,419 @@
+{
+  "$defs": {
+    "CourseRef": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "pattern": "^\\d{6}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "level": {
+          "enum": [
+            "undergraduate",
+            "graduate"
+          ],
+          "title": "Level",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "name",
+        "level"
+      ],
+      "title": "CourseRef",
+      "type": "object"
+    },
+    "Guidance": {
+      "additionalProperties": false,
+      "description": "Teacher guide card (plan 5.1): prediction, operation order, probes, negative results.",
+      "properties": {
+        "negative_results": {
+          "default": "",
+          "title": "Negative Results",
+          "type": "string"
+        },
+        "prediction": {
+          "title": "Prediction",
+          "type": "string"
+        },
+        "probes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Probes",
+          "type": "array"
+        },
+        "steps": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Steps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "prediction",
+        "steps"
+      ],
+      "title": "Guidance",
+      "type": "object"
+    },
+    "LessonStage": {
+      "additionalProperties": false,
+      "properties": {
+        "end_min": {
+          "exclusiveMinimum": 0,
+          "title": "End Min",
+          "type": "integer"
+        },
+        "groups": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Groups",
+          "type": "array"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "scenario_id": {
+          "default": "",
+          "title": "Scenario Id",
+          "type": "string"
+        },
+        "start_min": {
+          "minimum": 0,
+          "title": "Start Min",
+          "type": "integer"
+        },
+        "student": {
+          "title": "Student",
+          "type": "string"
+        },
+        "teacher": {
+          "title": "Teacher",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "start_min",
+        "end_min",
+        "teacher",
+        "student"
+      ],
+      "title": "LessonStage",
+      "type": "object"
+    },
+    "LevelTask": {
+      "additionalProperties": false,
+      "description": "Plan section 3.1: one scenario, two cognitive levels.",
+      "properties": {
+        "deliverable": {
+          "title": "Deliverable",
+          "type": "string"
+        },
+        "design": {
+          "title": "Design",
+          "type": "string"
+        },
+        "evidence": {
+          "title": "Evidence",
+          "type": "string"
+        },
+        "knowledge": {
+          "title": "Knowledge",
+          "type": "string"
+        },
+        "level": {
+          "enum": [
+            "undergraduate",
+            "graduate"
+          ],
+          "title": "Level",
+          "type": "string"
+        }
+      },
+      "required": [
+        "level",
+        "knowledge",
+        "design",
+        "evidence",
+        "deliverable"
+      ],
+      "title": "LevelTask",
+      "type": "object"
+    },
+    "Review": {
+      "additionalProperties": false,
+      "properties": {
+        "notes": {
+          "default": "",
+          "title": "Notes",
+          "type": "string"
+        },
+        "reviewed_at": {
+          "default": "",
+          "title": "Reviewed At",
+          "type": "string"
+        },
+        "reviewers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reviewers",
+          "type": "array"
+        },
+        "status": {
+          "default": "pending_teacher_review",
+          "enum": [
+            "draft",
+            "pending_teacher_review",
+            "reviewed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "title": "Review",
+      "type": "object"
+    },
+    "RubricItem": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension": {
+          "title": "Dimension",
+          "type": "string"
+        },
+        "excellent": {
+          "title": "Excellent",
+          "type": "string"
+        },
+        "insufficient": {
+          "title": "Insufficient",
+          "type": "string"
+        },
+        "passing": {
+          "title": "Passing",
+          "type": "string"
+        },
+        "weight": {
+          "exclusiveMinimum": 0,
+          "maximum": 100,
+          "title": "Weight",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dimension",
+        "weight",
+        "excellent",
+        "passing",
+        "insufficient"
+      ],
+      "title": "RubricItem",
+      "type": "object"
+    },
+    "WorksheetQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^Q\\d+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "rubric_dimension": {
+          "default": "",
+          "title": "Rubric Dimension",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "title": "WorksheetQuestion",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "duration_minutes": {
+      "exclusiveMinimum": 0,
+      "maximum": 240,
+      "title": "Duration Minutes",
+      "type": "integer"
+    },
+    "guidance": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Guidance"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "interpretation_rules": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Interpretation Rules",
+      "type": "array"
+    },
+    "lesson_id": {
+      "pattern": "^LESSON-[A-Z]+-\\d{3}$",
+      "title": "Lesson Id",
+      "type": "string"
+    },
+    "level_tasks": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/LevelTask"
+      },
+      "title": "Level Tasks",
+      "type": "array"
+    },
+    "mechanism_boundary": {
+      "default": "",
+      "title": "Mechanism Boundary",
+      "type": "string"
+    },
+    "objectives": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "title": "Objectives",
+      "type": "array"
+    },
+    "primary_courses": {
+      "items": {
+        "$ref": "#/$defs/CourseRef"
+      },
+      "minItems": 1,
+      "title": "Primary Courses",
+      "type": "array"
+    },
+    "related_courses": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CourseRef"
+      },
+      "title": "Related Courses",
+      "type": "array"
+    },
+    "review": {
+      "$ref": "#/$defs/Review"
+    },
+    "rubric": {
+      "default": [
+        {
+          "dimension": "概念准确",
+          "excellent": "术语准确，能解释金融机制与条件",
+          "insufficient": "核心概念错误或缺失",
+          "passing": "大致正确，有个别混淆",
+          "weight": 25
+        },
+        {
+          "dimension": "实验设计",
+          "excellent": "对照明确、种子及因素控制得当",
+          "insufficient": "未说明对照和变量",
+          "passing": "有基本组别，控制不完整",
+          "weight": 25
+        },
+        {
+          "dimension": "证据推理",
+          "excellent": "使用真实 run 的指标与订单，识别反例",
+          "insufficient": "只复述 AI 解释或虚构结果",
+          "passing": "能引用部分图表并推理",
+          "weight": 35
+        },
+        {
+          "dimension": "模型边界",
+          "excellent": "指出假设、适用范围和后续验证",
+          "insufficient": "把模拟结果当成现实定律",
+          "passing": "至少指出一个合理局限",
+          "weight": 15
+        }
+      ],
+      "items": {
+        "$ref": "#/$defs/RubricItem"
+      },
+      "minItems": 1,
+      "title": "Rubric",
+      "type": "array"
+    },
+    "scenarios": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Scenarios",
+      "type": "array"
+    },
+    "spec_version": {
+      "const": "0.1",
+      "default": "0.1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "stages": {
+      "items": {
+        "$ref": "#/$defs/LessonStage"
+      },
+      "minItems": 1,
+      "title": "Stages",
+      "type": "array"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Version",
+      "type": "string"
+    },
+    "worksheet": {
+      "items": {
+        "$ref": "#/$defs/WorksheetQuestion"
+      },
+      "minItems": 1,
+      "title": "Worksheet",
+      "type": "array"
+    }
+  },
+  "required": [
+    "lesson_id",
+    "version",
+    "title",
+    "duration_minutes",
+    "primary_courses",
+    "objectives",
+    "scenarios",
+    "stages",
+    "worksheet"
+  ],
+  "title": "LessonSpec",
+  "type": "object"
+}

@@ -1,0 +1,60 @@
+spec_version: "0.1"
+scenario_id: EXP-09
+version: 0.1.0
+title: 恐慌冲击与印花税调整的 2×2 交互
+module: E1/E2
+phase: P1
+course_codes: ["107349", "103213"]
+levels: [graduate]
+question: 在模型中，降税对成交的影响在有无恐慌冲击时是否不同？
+objectives:
+  - 能写出并解释交互差异 Δ = [Y(D) − Y(B)] − [Y(C) − Y(A)]
+  - 能在运行前预先指定结果指标 Y，并报告逐种子 Δ 的分布
+  - 能区分模型内交互差异与现实政策因果估计
+assumptions:
+  - 因素 1：第 8 步恐慌冲击 ∈ {无, 有}；因素 2：第 20 步印花税 0.0005→0.00025 ∈ {无, 有}
+  - 其余参数、人口与种子在四组间固定
+limitations:
+  - 交互差异只描述该模型、参数与种子条件下的比较，不构成现实政策的因果估计
+  - 标准向量决策不读取印花税率，降税只通过结算现金影响后续交易
+  - 此处“降税”仅指单资产卖方印花税（tax_change），不是财政政策传导
+evidence:
+  - 四组逐种子的预先指定指标 Y
+  - 逐种子交互差异 Δ 及其分布
+world:
+  type: single_asset_orderbook
+  agents: 64
+  steps: 30
+  initial_price: 3000.0
+  decision_mode: vectorized
+  market: {stamp_duty: 0.0005}
+  social: {topology: small_world, neighbors: 6}
+comparison:
+  pairing: matched_seed
+  seeds: [41, 42, 43, 44, 45]
+  reference_group: A
+  factorial: {factor_a: 恐慌冲击, factor_b: 印花税下调, neither: A, a_only: B, b_only: C, both: D}
+  groups:
+    - id: A
+      label: 无恐慌 / 不降税
+      events: []
+    - id: B
+      label: 有恐慌 / 不降税
+      events:
+        - {step: 8, kind: panic, value: 8}
+    - id: C
+      label: 无恐慌 / 降税
+      events:
+        - {step: 20, kind: tax_change, value: 0.00025}
+    - id: D
+      label: 有恐慌 / 降税
+      events:
+        - {step: 8, kind: panic, value: 8}
+        - {step: 20, kind: tax_change, value: 0.00025}
+observables: [price, volume, infected, fees]
+outcome:
+  primary: cumulative_volume
+  secondary: [max_drawdown, fees_total]
+source_policy: {required_origin: simulation, allow_teaching_example_as_run: false}
+approval: {require_teacher_confirmation: true}
+review: {status: pending_teacher_review}

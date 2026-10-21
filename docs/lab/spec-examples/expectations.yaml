@@ -1,0 +1,36 @@
+# Expected outcome of every example in this folder (protocol v0.1).
+# supported / supported_with_warnings / rejected come from the capability gate (codes = its issue codes);
+# schema_error means the document is not a valid ScenarioSpec (fails JSON Schema / Pydantic validation).
+accepted_panic_pair.yaml:
+  codes: []
+  status: supported
+accepted_single_seed_warning.yaml:
+  codes:
+  - SINGLE_SEED
+  status: supported_with_warnings
+invalid_extra_field.yaml:
+  codes: []
+  status: schema_error
+invalid_group_changes_population.yaml:
+  codes: []
+  status: schema_error
+rejected_bank_world.yaml:
+  codes:
+  - UNSUPPORTED_WORLD
+  status: rejected
+rejected_no_teacher_confirmation.yaml:
+  codes:
+  - APPROVAL_REQUIRED
+  status: rejected
+rejected_rrr_cut.yaml:
+  codes:
+  - UNSUPPORTED_MECHANISM
+  status: rejected
+rejected_teaching_csv_as_run.yaml:
+  codes:
+  - SOURCE_POLICY
+  status: rejected
+rejected_unpaired_resume.yaml:
+  codes:
+  - UNPAIRED_RESUME
+  status: rejected

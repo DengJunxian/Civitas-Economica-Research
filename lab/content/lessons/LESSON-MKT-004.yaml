@@ -1,0 +1,52 @@
+spec_version: "0.1"
+lesson_id: LESSON-MKT-004
+version: 0.1.0
+title: 暂停交易能停止恐慌吗？（EXP-07 课堂包）
+duration_minutes: 20
+primary_courses:
+  - {code: "107349", name: 金融机构与金融市场, level: undergraduate}
+  - {code: "214822", name: 金融机构与金融市场, level: graduate}
+related_courses:
+  - {code: "107449", name: 金融监管, level: undergraduate}
+objectives:
+  - 能区分交易中断、价格记录与风险消除
+  - 能用停牌期间的卖出决策说明没有成交不等于没有负面预期
+  - 能比较复牌后成交与未停牌组的差异
+scenarios: [EXP-07]
+stages:
+  - {name: 课前预测, start_min: 0, end_min: 3, teacher: 说明第 15 步停牌、第 18 步复牌, student: 预测停牌对回撤、成交和恐慌人数的影响}
+  - {name: 运行与观察, start_min: 3, end_min: 10, teacher: 运行 EXP-07，展示停牌窗口内的价格、成交与决策, student: 记录停牌期间哪些量为零、哪些仍在变化, scenario_id: EXP-07, groups: [B, C]}
+  - {name: 配对比较, start_min: 10, end_min: 15, teacher: 展示最大回撤、零成交步与卖出决策占比的逐种子差异, student: 写出差异方向及一致程度, scenario_id: EXP-07, groups: [B, C]}
+  - {name: 讨论与局限, start_min: 15, end_min: 20, teacher: 讨论平坦价格曲线的含义, student: 写出一条证据和一条模型局限}
+worksheet:
+  - {id: Q1, text: 停牌期间价格曲线为什么是平的？这代表波动风险下降了吗？, rubric_dimension: 概念准确}
+  - {id: Q2, text: 停牌期间投资者还在产生卖出决策吗？引用决策表中的数据。, rubric_dimension: 证据推理}
+  - {id: Q3, text: 停牌组的最大回撤比恐慌组小，能否据此认为停牌是有效的监管措施？, rubric_dimension: 模型边界}
+  - {id: Q4, text: 如果停牌时间改为 6 步，你预期会怎样？写出你的对照设计。, rubric_dimension: 实验设计}
+level_tasks:
+  - level: undergraduate
+    knowledge: 定义停牌、复牌与最后成交价规则，预测停牌的影响
+    design: 比较给定的恐慌组与恐慌 + 停牌组
+    evidence: 解释停牌窗口内的价格、成交量与决策
+    deliverable: 课堂工作纸 Q1–Q4
+  - level: graduate
+    knowledge: 区分机械效应（无成交、沿用价格）与行为效应（决策变化）
+    design: 以停牌时长（3、6、9 步）做敏感性检验
+    evidence: 报告回撤与卖出决策差异随停牌时长的变化及不确定性
+    deliverable: 研究性实验报告，讨论外推到现实监管的限制
+guidance:
+  prediction: 停牌三步后，市场会恢复平静吗？
+  steps:
+    - 运行 EXP-07 两组对照
+    - 先指出停牌窗口（灰色阴影），查看价格和成交量
+    - 再看停牌期间的买卖决策与恐慌人数
+    - 打开最大回撤和卖出决策占比的配对差异表
+  probes:
+    - 停牌期间没有订单提交，但决策表仍有卖出意图，这说明什么？
+    - 停牌撤单数为什么是 0？
+  negative_results: 停牌撤单数通常为 0，因为订单默认只存活 1 步，停牌前挂单已被撤销；恐慌人数在两组间相同，停牌没有改变传播
+interpretation_rules:
+  - 停牌导致的平坦价格曲线不代表波动风险下降
+  - 同时展示零成交与订单状态
+mechanism_boundary: 模型没有集合竞价复牌、涨跌停板联动或监管沟通；结果不能推出现实监管措施的效果。
+review: {status: pending_teacher_review}

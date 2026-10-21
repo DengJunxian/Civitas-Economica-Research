@@ -1,0 +1,82 @@
+{
+  "EXP-01": {
+    "hash": "14cc5c5f3d9de86d309fba5222c5f396e7474e4fbf7a6afd77de7ff61429faa7",
+    "version": "0.1.1"
+  },
+  "EXP-02": {
+    "hash": "a07549bddfe5b098ecad04cda2ad72a5f9057c9a637a81c9fc9c0eb4909c356e",
+    "version": "0.1.0"
+  },
+  "EXP-05": {
+    "hash": "d3919dccec65105073c68122c3d8cbc3f8f159fbab76067484811952f5e9aded",
+    "version": "0.1.0"
+  },
+  "EXP-06": {
+    "hash": "6572a30d43afc96f0c397588f089267142500f22bb9faec550ad73662bbabcbc",
+    "version": "0.2.0"
+  },
+  "EXP-07": {
+    "hash": "618555ac682c486a6163d72f470379a7041bf8adabe12401a04ba0de848f5ea0",
+    "version": "0.1.0"
+  },
+  "EXP-08": {
+    "hash": "6df95342e0ef28191236670270eb0be6e8d90b8c854782d551185f626e16ea08",
+    "version": "0.1.0"
+  },
+  "EXP-09": {
+    "hash": "977c76c7ca57d8798f6fdd4dcffe60e8594cf093fd5a08b477ebf84a6d9f7dd0",
+    "version": "0.1.0"
+  },
+  "EXP-10": {
+    "hash": "0336aa98f00adf0dcdc19bd6204998c9a8040f24bbcb1d87099a79838290927c",
+    "version": "0.1.0"
+  },
+  "LESSON-BEH-001": {
+    "hash": "f23c80c2ac7724d365c9bbf8f746fc12f67fadd1ff2f4053f8b49268a2e96001",
+    "version": "0.1.0"
+  },
+  "LESSON-BEH-002": {
+    "hash": "4492ef184e6cb27963eece8e26cc12ce10975ed6e41da112721dec4dd9aaf280",
+    "version": "0.2.0"
+  },
+  "LESSON-CF-001": {
+    "hash": "95b3b53eebdf70740971a091968061e1f7d3efe536d35431508950a462b72719",
+    "version": "0.1.0"
+  },
+  "LESSON-EMP-001": {
+    "hash": "f053fb30f27ca9ce805161a8c673d5b6a41a3a6d936047f3329d3bb6583c8de5",
+    "version": "0.1.0"
+  },
+  "LESSON-FI-001": {
+    "hash": "d83f74bc83759f68000b108bf46cb5fa17fa71bbab33e39f02f2c65bdc30f488",
+    "version": "0.1.0"
+  },
+  "LESSON-MKT-001": {
+    "hash": "0a9d8f15627fa73836f4fa5f18918c0230d43e09d63787ef053ad4ec98210f12",
+    "version": "0.2.0"
+  },
+  "LESSON-MKT-002": {
+    "hash": "c4517c567f3e04c8d7167d941af97aa7223eca030dd8f5833f6c52093712a006",
+    "version": "0.1.1"
+  },
+  "LESSON-MKT-003": {
+    "hash": "6a3a5681ec47d035ab4e0b79857b164cbd69569e784aa6c17704cddd36bcb48d",
+    "version": "0.1.0"
+  },
+  "LESSON-MKT-004": {
+    "hash": "e55d3104e909a84421e3514f898c5816b69f8aeb5744e5185dc57b492eaf5b72",
+    "version": "0.1.0"
+  },
+  "LESSON-MKT-005": {
+    "hash": "9dff2d7c06feb9296ef48d5dfffa4b7382a82063b8fd95f380547977b9bbb22b",
+    "version": "0.1.0"
+  },
+  "calc:EXP-15": {
+    "hash": "0ab81f45efa5b3800c7474779899bb1dbe1f8e2f733d932755a8fd410e0d4cb8",
+    "version": "0.1.0"
+  },
+  "calc:EXP-17": {
+    "hash": "d4d1ffc74b42e8750d9d59b6757f527f4da88309499e860ea6def2678dbe1f11",
+    "version": "0.1.0"
+  }
+}

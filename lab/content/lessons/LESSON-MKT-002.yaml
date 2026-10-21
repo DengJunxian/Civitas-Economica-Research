@@ -1,0 +1,52 @@
+spec_version: "0.1"
+lesson_id: LESSON-MKT-002
+version: 0.1.1
+title: 成交价格如何形成？（EXP-01 课堂包）
+duration_minutes: 20
+primary_courses:
+  - {code: "107349", name: 金融机构与金融市场, level: undergraduate}
+  - {code: "214822", name: 金融机构与金融市场, level: graduate}
+related_courses:
+  - {code: "101560", name: 中级微观经济学, level: undergraduate}
+objectives:
+  - 能用一笔实际成交（买方、卖方、价格、数量）解释价格从哪里来
+  - 能区分最后成交价、买卖价差与未成交挂单
+  - 能指出订单簿价格形成与教科书供需均衡图的差异
+scenarios: [EXP-01]
+stages:
+  - {name: 课前预测, start_min: 0, end_min: 3, teacher: 展示初始价格 3000 与 64 个投资者的设定, student: 预测 30 步后价格和成交笔数}
+  - {name: 运行与观察, start_min: 3, end_min: 10, teacher: 运行 EXP-01，展示价格、成交量与买卖盘深度, student: 标出无成交步和价差不可定义步, scenario_id: EXP-01, groups: [A]}
+  - {name: 追溯一笔成交, start_min: 10, end_min: 15, teacher: 打开逐笔追溯，选一名投资者, student: 从决策 → 订单 → 成交写出一条完整链条, scenario_id: EXP-01, groups: [A]}
+  - {name: 讨论与局限, start_min: 15, end_min: 20, teacher: 对比供需均衡图，讨论价格漂移来源, student: 写出一条与教科书模型的差异和一条模型局限}
+worksheet:
+  - {id: Q1, text: 选一笔成交，写出买方、卖方、价格和数量；它与该步的最后成交价有什么关系？, rubric_dimension: 证据推理}
+  - {id: Q2, text: 某一步没有成交时，图中的价格是怎么来的？这能说明价格稳定吗？, rubric_dimension: 概念准确}
+  - {id: Q3, text: 为什么有些步的价差显示为不可定义而不是 0？, rubric_dimension: 概念准确}
+  - {id: Q4, text: 本实验没有任何事件，价格为什么仍然下行？这能归结为市场规律吗？请结合情绪与交易意图的变化说明。, rubric_dimension: 模型边界}
+level_tasks:
+  - level: undergraduate
+    knowledge: 定义最后成交价、买卖价差、挂单深度，并预测价格方向
+    design: 不改变参数，只观察一次运行
+    evidence: 解释价格图中的一段，以及一名投资者的决策—订单—成交链
+    deliverable: 课堂工作纸 Q1–Q4
+  - level: graduate
+    knowledge: 说明离散步连续撮合的机制假设，区分价格形成与均衡定价
+    design: 把种子集合扩展到 41–45，比较成交笔数与价差不可定义步数的分布
+    evidence: 报告多种子分布，指出单次路径与稳健结论的区别
+    deliverable: 一页实验说明，附运行 run_id 与配置
+guidance:
+  prediction: 价格会怎样变化？每步大约会有多少笔成交？
+  steps:
+    - 在场景实验室选 EXP-01，阅读课题卡与模型限制
+    - 填写确认教师并运行，切换到对照分析
+    - 依次查看价格、成交量、买卖盘深度和价差
+    - 在逐笔追溯中选一名有成交的投资者，展示其决策、订单与成交
+  probes:
+    - 无成交的那几步，价格曲线为什么是平的？
+    - 卖单多于买单时，成交价由谁决定？
+  negative_results: 价格在无事件时也会下行约 9%。初始情绪平均为正，但情绪更新包含价格趋势项，早期下跌让交易意图持续转负、卖出增多，形成模型内的自我强化；应作为模型动力学的局限讨论，而不是市场规律
+interpretation_rules:
+  - 价格只来自实际撮合；无成交时沿用最后成交价
+  - 任一侧无挂单时价差不可定义，不能读作价差为 0
+mechanism_boundary: 单资产、离散步连续撮合，默认 T+0、无卖空与融资；不是完整一般均衡模型。
+review: {status: pending_teacher_review}

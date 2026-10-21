@@ -41,6 +41,7 @@ def test_ui_runs_same_service(tmp_path, monkeypatch):
     monkeypatch.setattr(ExperimentRunner, "run", lambda self, output: run(self, tmp_path))
     app = AppTest.from_file(str(ROOT / "app.py")).run(timeout=20)
     assert not app.exception
+    app.sidebar.radio[0].set_value("配置与运行").run(timeout=20)
     app.text_area[0].set_value("n_agents: 12\nsteps: 3\n")
     app.button[1].click().run(timeout=20)
     assert not app.exception

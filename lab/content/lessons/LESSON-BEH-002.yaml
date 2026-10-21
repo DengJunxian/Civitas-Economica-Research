@@ -1,0 +1,51 @@
+spec_version: "0.1"
+lesson_id: LESSON-BEH-002
+version: 0.2.0
+title: 网络结构是否影响恐慌？（EXP-06 课堂包）
+duration_minutes: 20
+primary_courses:
+  - {code: "108272", name: 博弈论与信息经济学, level: undergraduate}
+  - {code: "107452", name: 行为金融学, level: undergraduate}
+related_courses:
+  - {code: "108441", name: 金融与经济中的复杂网络分析, level: undergraduate}
+objectives:
+  - 能比较三种拓扑下的传播覆盖与峰值
+  - 能说明拓扑改变的是谁影响谁，而不是识别真实社交关系
+  - 能用多种子结果判断差异是否稳定，并说明传播强度假设对结论的作用
+scenarios: [EXP-06]
+stages:
+  - {name: 课前预测, start_min: 0, end_min: 3, teacher: 展示小世界、环形、无边三种网络, student: 预测哪种网络中恐慌传播最广}
+  - {name: 运行与观察, start_min: 3, end_min: 10, teacher: 运行 EXP-06 三组对照, student: 记录三组恐慌峰值与价格路径, scenario_id: EXP-06, groups: [SW, RG, EM]}
+  - {name: 稳健性判断, start_min: 10, end_min: 15, teacher: 展示恐慌峰值的逐种子差异, student: 判断差异是否稳定，或是否根本不存在, scenario_id: EXP-06, groups: [SW, RG, EM]}
+  - {name: 讨论与局限, start_min: 15, end_min: 20, teacher: 引导讨论传播强度假设, student: 写出一条证据、一条局限和一个改进实验}
+worksheet:
+  - {id: Q1, text: 三组的恐慌峰值分别是多少？差异在 5 个种子中稳定吗？, rubric_dimension: 证据推理}
+  - {id: Q2, text: 本实验把传播系数 beta 从默认 0.3 提高到 1.0。如果用默认值，你预期三种网络的差异会怎样？这说明了什么？, rubric_dimension: 模型边界}
+  - {id: Q3, text: 为什么不能用本实验判断真实投资者社交网络的结构？, rubric_dimension: 概念准确}
+  - {id: Q4, text: 设计一个能检验“网络结构影响传播”的改进实验，写出要改变和要固定的参数。, rubric_dimension: 实验设计}
+level_tasks:
+  - level: undergraduate
+    knowledge: 理解小世界、环形和无边网络的区别，预测传播差异
+    design: 比较给定的三种拓扑
+    evidence: 解释恐慌人数曲线，指出差异是否存在
+    deliverable: 课堂工作纸 Q1–Q4
+  - level: graduate
+    knowledge: 说明传播概率由传播系数、语义压力与从众度共同决定
+    design: 以传播系数 beta 与拓扑做 2×3 因素实验（需教师认可 beta 取值并写入假设）
+    evidence: 报告拓扑效应是否依赖传播强度，包括无差异的组合
+    deliverable: 研究性实验报告，明确标注改变的参数及理由
+guidance:
+  prediction: 小世界、环形和无边网络中，哪一种恐慌传播最广？
+  steps:
+    - 运行 EXP-06 三组对照
+    - 先看恐慌人数与 SIRS 状态，再看价格与卖出决策
+    - 打开恐慌峰值的配对差异表，查看正/负/零的种子数
+  probes:
+    - 无边网络中为什么恐慌人数一直等于种子数？
+    - 恐慌覆盖人数差别明显，价格和卖出决策的差别却很小，可能是什么原因？
+  negative_results: 在默认 beta=0.3 下恐慌几乎不扩散，三种网络没有可比差异；本场景公开地把 beta 提高到 1.0 后，有边网络的恐慌覆盖明显高于无边网络，但对价格的影响仍很小。核心讨论点：先确认机制被激活再比较，且传播覆盖与市场影响是两回事
+interpretation_rules:
+  - 不把某一条曲线当作普遍规律；看 5 个种子的分布
+  - 零差异也要报告，并说明可能原因
+mechanism_boundary: 合成网络不是真实社交关系；可变度数在情绪更新中被循环填充为矩形邻居矩阵，这一近似会改变邻居权重。
+review: {status: pending_teacher_review}

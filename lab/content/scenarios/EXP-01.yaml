@@ -1,0 +1,46 @@
+spec_version: "0.1"
+scenario_id: EXP-01
+version: 0.1.1
+title: 成交价格如何形成？
+module: E1
+phase: P1
+course_codes: ["107349", "214822", "101560"]
+levels: [undergraduate, graduate]
+question: 在双边订单簿中，一个成交价格是如何由买卖订单撮合产生的？
+objectives:
+  - 能用一笔实际成交（买方、卖方、价格、数量）解释"价格从哪里来"
+  - 能区分最后成交价、买卖价差与未成交挂单
+  - 能指出订单簿微观价格形成与教科书供需均衡图的差异
+assumptions:
+  - 单资产、连续撮合、离散时间步；每步订单默认存活 1 步
+  - 64 个合成投资者，初始价格 3000，无外生事件
+limitations:
+  - 微观价格形成不等于完整一般均衡；没有供给曲线与需求曲线的显式求解
+  - 无事件时价格仍会下行约 9%：初始情绪平均为正、交易意图接近 0，但情绪更新包含价格趋势项，早期下跌使意图持续转负、卖出增多，形成模型内的自我强化；这是模型动力学特征，不是市场规律
+  - 任一侧无挂单时价差不可定义，不能读作"价差为 0"
+evidence:
+  - 逐笔成交（trades.csv）与对应订单（orders.csv）
+  - 每步最后成交价、成交量与买卖盘深度
+  - 无双边报价的步数（价差不可定义）
+world:
+  type: single_asset_orderbook
+  agents: 64
+  steps: 30
+  initial_price: 3000.0
+  decision_mode: vectorized
+  social: {topology: small_world, neighbors: 6}
+comparison:
+  pairing: matched_seed
+  seeds: [42]
+  groups:
+    - id: A
+      label: 基准市场
+      description: 无事件，观察撮合本身
+      events: []
+observables: [price, volume, trade_count, spread, depth, orders, decisions]
+outcome:
+  primary: trade_count_total
+  secondary: [undefined_spread_steps, zero_volume_steps, final_return]
+source_policy: {required_origin: simulation, allow_teaching_example_as_run: false}
+approval: {require_teacher_confirmation: true}
+review: {status: pending_teacher_review}

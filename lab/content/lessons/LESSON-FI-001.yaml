@@ -1,0 +1,50 @@
+spec_version: "0.1"
+lesson_id: LESSON-FI-001
+version: 0.1.0
+title: 收益率上升 1%，债券价格会跌多少？（EXP-17 课堂包）
+duration_minutes: 20
+primary_courses:
+  - {code: "107435", name: 固定收益证券, level: undergraduate}
+  - {code: "250235", name: 固定收益证券, level: graduate}
+objectives:
+  - 能计算债券价格、修正久期、凸性与 DV01，并用久期估计价格变化
+  - 能比较精确重估值与久期、久期 + 凸性近似，解释凸性为何让近似误差变小
+  - 能说明期限、票息对久期的影响，以及近似只适用于小幅平行移动
+scenarios: [EXP-17]
+stages:
+  - {name: 课前预测, start_min: 0, end_min: 3, teacher: 展示 10 年期平价债（票息 5%）, student: 预测收益率上升 1% 时价格下跌多少}
+  - {name: 计算与比较, start_min: 3, end_min: 10, teacher: 在计算实验室展示价格、久期与收益率变动表, student: 记录 ±100bp 下的精确变化、久期估计与误差, scenario_id: EXP-17}
+  - {name: 改变期限与票息, start_min: 10, end_min: 15, teacher: 切换零息债与 30 年期低票息债预设, student: 比较三只债券的久期、凸性与 ±200bp 误差, scenario_id: EXP-17}
+  - {name: 讨论与局限, start_min: 15, end_min: 20, teacher: 讨论久期近似何时失效以及模型未包含的风险, student: 写出一条结论和一条局限}
+worksheet:
+  - {id: Q1, text: 收益率上升 100bp 时，精确价格变化和久期估计各是多少？误差的方向是什么？, rubric_dimension: 证据推理}
+  - {id: Q2, text: 为什么收益率上升和下降相同幅度时，价格变化的绝对值不相等？用凸性解释。, rubric_dimension: 概念准确}
+  - {id: Q3, text: 零息债的麦考利久期为什么等于期限？票息越高久期越长还是越短？, rubric_dimension: 概念准确}
+  - {id: Q4, text: 列出至少一项本计算没有考虑、但真实债券定价必须考虑的因素。, rubric_dimension: 模型边界}
+level_tasks:
+  - level: undergraduate
+    knowledge: 定义到期收益率、久期、凸性，预测收益率变化对价格的影响
+    design: 使用给定的三只债券预设
+    evidence: 读出价格—收益率曲线与收益率变动表，比较近似误差
+    deliverable: 课堂工作纸 Q1–Q4
+  - level: graduate
+    knowledge: 推导修正久期与凸性的定义，说明它们是价格对收益率的一阶、二阶导数
+    design: 构造久期相同而凸性不同的两只债券（如子弹型与哑铃型组合的成分），比较大幅变动下的表现
+    evidence: 报告 ±200bp 下的误差表，讨论平行移动假设的局限
+    deliverable: 一页分析说明，附输入参数与 params_hash
+guidance:
+  prediction: 10 年期平价债，收益率从 5% 升到 6%，价格大约跌多少？
+  steps:
+    - 在计算实验室选 EXP-17，默认 10 年期平价债
+    - 先让学生用修正久期手算估计，再看收益率变动表中的精确值
+    - 依次切换零息债和 30 年期低票息债预设，比较久期、凸性与误差
+    - 下载结果报告作为课后材料
+  probes:
+    - 久期估计在收益率上升时偏大还是偏小？下降时呢？
+    - 为什么 30 年期低票息债的近似误差最大？
+  negative_results: 收益率变动越大，久期近似误差越大；±200bp 时只用久期会明显低估价格上涨、高估价格下跌，这是凸性的直接证据
+interpretation_rules:
+  - 结果完全由输入与公式决定，不是市场价格预测
+  - 近似只适用于小幅、平行的收益率变化
+mechanism_boundary: 无违约、无内嵌期权的固定利率债券，平坦收益率曲线平行移动，估值日在付息日；确定性公式计算，不是多智能体仿真。
+review: {status: pending_teacher_review}

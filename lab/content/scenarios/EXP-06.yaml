@@ -1,0 +1,59 @@
+spec_version: "0.1"
+scenario_id: EXP-06
+version: 0.2.0
+title: 网络结构是否影响恐慌？
+module: E2
+phase: P1
+course_codes: ["108272", "107452"]
+levels: [undergraduate, graduate]
+question: 同样的恐慌冲击，在小世界、环形和无边网络中传播与交易反应有何不同？
+objectives:
+  - 能比较三种拓扑下的传播覆盖与峰值
+  - 能说明拓扑改变的是谁影响谁，而不是识别真实世界的社交关系
+  - 能用多种子结果判断差异是否稳定
+assumptions:
+  - 三组人口、种子、恐慌冲击完全相同，只改变社会网络拓扑
+  - 小世界与环形网络均为每人 6 个邻居；无边网络中情绪更新只参考自身
+  - 传播系数 beta 设为 1.0（标准默认 0.3）：默认值下恐慌几乎不扩散，三种网络无法比较；提高 beta 是为使传播机制被激活而公开选择的教学参数，不是校准值
+limitations:
+  - 合成网络不是真实投资者社交关系；不能据此声称识别了现实传播结构
+  - 可变度数在情绪更新中被循环填充为矩形邻居矩阵，这一近似会改变邻居权重
+  - beta=1.0 时拓扑主要影响恐慌覆盖人数，对价格与卖出决策的影响仍很小；默认 beta 下的零差异结果见基线审计 F2
+  - 结果只代表该模型、参数与种子集合
+evidence:
+  - 感染人数与 SIRS 状态分布随时间变化
+  - 价格与成交量路径
+  - 卖出决策与订单变化
+world:
+  type: single_asset_orderbook
+  agents: 64
+  steps: 30
+  initial_price: 3000.0
+  decision_mode: vectorized
+  social: {topology: small_world, neighbors: 6, beta: 1.0}
+comparison:
+  pairing: matched_seed
+  seeds: [41, 42, 43, 44, 45]
+  reference_group: SW
+  groups:
+    - id: SW
+      label: 小世界网络
+      events:
+        - {step: 8, kind: panic, value: 8}
+    - id: RG
+      label: 环形网络
+      social: {topology: ring}
+      events:
+        - {step: 8, kind: panic, value: 8}
+    - id: EM
+      label: 无边网络
+      social: {topology: empty}
+      events:
+        - {step: 8, kind: panic, value: 8}
+observables: [infected, sirs, price, volume, decisions, orders]
+outcome:
+  primary: peak_infected
+  secondary: [sell_decision_rate, max_drawdown, cumulative_volume]
+source_policy: {required_origin: simulation, allow_teaching_example_as_run: false}
+approval: {require_teacher_confirmation: true}
+review: {status: pending_teacher_review}

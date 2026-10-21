@@ -1,0 +1,53 @@
+spec_version: "0.1"
+lesson_id: LESSON-EMP-001
+version: 0.1.0
+title: 换一个种子，结论还成立吗？（EXP-10 课堂包）
+duration_minutes: 20
+primary_courses:
+  - {code: "103213", name: 计量经济学, level: undergraduate}
+  - {code: "102927", name: 金融计量学, level: undergraduate}
+related_courses:
+  - {code: "107442", name: 实验金融学, level: undergraduate}
+  - {code: "214829", name: 机器学习统计基础, level: graduate}
+objectives:
+  - 能描述同一配置在多个种子下结果的分布，说明单次路径不能代表稳健结论
+  - 能比较组均值差与逐种子配对差的离散程度，解释配对设计的作用
+  - 能说明种子间的描述性区间不是对真实市场的统计推断
+scenarios: [EXP-10]
+stages:
+  - {name: 课前预测, start_min: 0, end_min: 3, teacher: 只展示种子 41 的一条路径, student: 预测换成其他种子后累计成交量会差多少}
+  - {name: 种子分布, start_min: 3, end_min: 9, teacher: 运行 EXP-10，打开每个种子的路径与组内统计, student: 记录基准组累计成交量的最小、最大与标准差, scenario_id: EXP-10, groups: [A]}
+  - {name: 配对与不配对, start_min: 9, end_min: 15, teacher: 对比组均值差与逐种子配对差的标准差, student: 说明为什么配对差的波动小得多, scenario_id: EXP-10, groups: [A, B]}
+  - {name: 讨论与局限, start_min: 15, end_min: 20, teacher: 讨论描述性区间与统计推断的区别, student: 写出一条证据和一条局限}
+worksheet:
+  - {id: Q1, text: 基准组 10 个种子的累计成交量范围是多少？如果只看一个种子，可能得出什么错误结论？, rubric_dimension: 证据推理}
+  - {id: Q2, text: 组标准差和逐种子配对差的标准差哪个更小？为什么配对能减少随机性的影响？, rubric_dimension: 实验设计}
+  - {id: Q3, text: 配对差的描述性区间说明了什么？它能否说明真实市场中恐慌的效果？, rubric_dimension: 模型边界}
+  - {id: Q4, text: 如果只用 3 个种子，你对结论的把握会怎样变化？你会如何决定种子数？, rubric_dimension: 实验设计}
+level_tasks:
+  - level: undergraduate
+    knowledge: 理解随机种子、样本均值与标准差，预测结果在种子间的差异
+    design: 使用给定的 10 个种子与两组设计
+    evidence: 读出组内统计与配对差表，比较两种标准差
+    deliverable: 课堂工作纸 Q1–Q4
+  - level: graduate
+    knowledge: 区分模型内随机性与抽样不确定性，说明配对设计减少方差的条件
+    design: 比较 3、5、10 个种子下配对差均值与区间的稳定性
+    evidence: 报告配对差标准差与组标准差之比，讨论描述性区间的含义与局限
+    deliverable: 一页方法说明，附 run_id、种子集合与配置
+guidance:
+  prediction: 换一个种子，累计成交量会差几十股还是几百股？恐慌组和基准组的差会跟着大幅变化吗？
+  steps:
+    - 运行 EXP-10（20 次运行，建议课前预运行并校验归档）
+    - 打开"显示每个种子的路径"，先只看基准组
+    - 切换到累计成交量，读组内统计表，再读配对差表
+    - 让学生计算或比较两种标准差，讨论配对设计
+  probes:
+    - 基准组种子间差几百股，配对差却只有十几股，说明了什么？
+    - 描述性区间不包含 0，能否说"恐慌显著减少成交"？
+  negative_results: 恐慌组与基准组的配对差很小，而种子间差异很大；如果不配对，组间差异容易被随机性淹没，这正是本课要展示的现象
+interpretation_rules:
+  - 种子只抽样模型内部的随机性，不是对真实市场的抽样
+  - 描述性区间不是显著性检验，课堂上不使用"显著"
+mechanism_boundary: 两组只差第 8 步的抽象恐慌冲击；配对只保证事件前路径一致，事件后随机数消耗不同。
+review: {status: pending_teacher_review}

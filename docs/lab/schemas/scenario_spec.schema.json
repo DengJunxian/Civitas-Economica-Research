@@ -1,0 +1,557 @@
+{
+  "$defs": {
+    "Approval": {
+      "additionalProperties": false,
+      "properties": {
+        "require_teacher_confirmation": {
+          "default": true,
+          "title": "Require Teacher Confirmation",
+          "type": "boolean"
+        }
+      },
+      "title": "Approval",
+      "type": "object"
+    },
+    "ComparisonSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "factorial": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FactorialSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "groups": {
+          "items": {
+            "$ref": "#/$defs/GroupSpec"
+          },
+          "minItems": 1,
+          "title": "Groups",
+          "type": "array"
+        },
+        "pairing": {
+          "const": "matched_seed",
+          "default": "matched_seed",
+          "title": "Pairing",
+          "type": "string"
+        },
+        "reference_group": {
+          "default": "",
+          "title": "Reference Group",
+          "type": "string"
+        },
+        "seeds": {
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Seeds",
+          "type": "array"
+        }
+      },
+      "required": [
+        "seeds",
+        "groups"
+      ],
+      "title": "ComparisonSpec",
+      "type": "object"
+    },
+    "EventSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "minLength": 1,
+          "title": "Kind",
+          "type": "string"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        },
+        "step": {
+          "title": "Step",
+          "type": "integer"
+        },
+        "value": {
+          "default": 0.0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "step",
+        "kind"
+      ],
+      "title": "EventSpec",
+      "type": "object"
+    },
+    "FactorialSpec": {
+      "additionalProperties": false,
+      "description": "2x2 design; interaction = [Y(both) - Y(a_only)] - [Y(b_only) - Y(neither)].",
+      "properties": {
+        "a_only": {
+          "title": "A Only",
+          "type": "string"
+        },
+        "b_only": {
+          "title": "B Only",
+          "type": "string"
+        },
+        "both": {
+          "title": "Both",
+          "type": "string"
+        },
+        "factor_a": {
+          "minLength": 1,
+          "title": "Factor A",
+          "type": "string"
+        },
+        "factor_b": {
+          "minLength": 1,
+          "title": "Factor B",
+          "type": "string"
+        },
+        "neither": {
+          "title": "Neither",
+          "type": "string"
+        }
+      },
+      "required": [
+        "factor_a",
+        "factor_b",
+        "neither",
+        "a_only",
+        "b_only",
+        "both"
+      ],
+      "title": "FactorialSpec",
+      "type": "object"
+    },
+    "GroupSpec": {
+      "additionalProperties": false,
+      "description": "One experimental arm. Only market/social overrides and events may vary,\nso that population size, horizon, initial price and decision semantics stay\nidentical across matched-seed arms.",
+      "properties": {
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "events": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EventSpec"
+          },
+          "title": "Events",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9]{1,8}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "market": {
+          "$ref": "#/$defs/MarketOverrides"
+        },
+        "social": {
+          "$ref": "#/$defs/SocialOverrides"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "title": "GroupSpec",
+      "type": "object"
+    },
+    "MarketOverrides": {
+      "additionalProperties": false,
+      "properties": {
+        "commission": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commission"
+        },
+        "stamp_duty": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stamp Duty"
+        }
+      },
+      "title": "MarketOverrides",
+      "type": "object"
+    },
+    "OutcomeSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "title": "Primary",
+          "type": "string"
+        },
+        "secondary": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Secondary",
+          "type": "array"
+        }
+      },
+      "required": [
+        "primary"
+      ],
+      "title": "OutcomeSpec",
+      "type": "object"
+    },
+    "Review": {
+      "additionalProperties": false,
+      "properties": {
+        "notes": {
+          "default": "",
+          "title": "Notes",
+          "type": "string"
+        },
+        "reviewed_at": {
+          "default": "",
+          "title": "Reviewed At",
+          "type": "string"
+        },
+        "reviewers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reviewers",
+          "type": "array"
+        },
+        "status": {
+          "default": "pending_teacher_review",
+          "enum": [
+            "draft",
+            "pending_teacher_review",
+            "reviewed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "title": "Review",
+      "type": "object"
+    },
+    "SocialOverrides": {
+      "additionalProperties": false,
+      "properties": {
+        "beta": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Beta"
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delta"
+        },
+        "gamma": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gamma"
+        },
+        "initial_infected": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Initial Infected"
+        },
+        "neighbors": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Neighbors"
+        },
+        "rewire_probability": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rewire Probability"
+        },
+        "topology": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Topology"
+        }
+      },
+      "title": "SocialOverrides",
+      "type": "object"
+    },
+    "SourcePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_teaching_example_as_run": {
+          "default": false,
+          "title": "Allow Teaching Example As Run",
+          "type": "boolean"
+        },
+        "required_origin": {
+          "default": "simulation",
+          "title": "Required Origin",
+          "type": "string"
+        }
+      },
+      "title": "SourcePolicy",
+      "type": "object"
+    },
+    "WorldSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "agents": {
+          "default": 64,
+          "title": "Agents",
+          "type": "integer"
+        },
+        "decision_mode": {
+          "default": "vectorized",
+          "title": "Decision Mode",
+          "type": "string"
+        },
+        "initial_price": {
+          "default": 3000.0,
+          "title": "Initial Price",
+          "type": "number"
+        },
+        "market": {
+          "$ref": "#/$defs/MarketOverrides"
+        },
+        "market_regime": {
+          "default": "default",
+          "title": "Market Regime",
+          "type": "string"
+        },
+        "social": {
+          "$ref": "#/$defs/SocialOverrides"
+        },
+        "steps": {
+          "default": 30,
+          "title": "Steps",
+          "type": "integer"
+        },
+        "type": {
+          "default": "single_asset_orderbook",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "WorldSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "approval": {
+      "$ref": "#/$defs/Approval"
+    },
+    "assumptions": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "comparison": {
+      "$ref": "#/$defs/ComparisonSpec"
+    },
+    "course_codes": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Course Codes",
+      "type": "array"
+    },
+    "evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "levels": {
+      "default": [
+        "undergraduate"
+      ],
+      "items": {
+        "enum": [
+          "undergraduate",
+          "graduate"
+        ],
+        "type": "string"
+      },
+      "title": "Levels",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "module": {
+      "pattern": "^E[1-7](/E[1-7])?$",
+      "title": "Module",
+      "type": "string"
+    },
+    "objectives": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "title": "Objectives",
+      "type": "array"
+    },
+    "observables": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Observables",
+      "type": "array"
+    },
+    "outcome": {
+      "$ref": "#/$defs/OutcomeSpec"
+    },
+    "phase": {
+      "enum": [
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "title": "Phase",
+      "type": "string"
+    },
+    "question": {
+      "minLength": 1,
+      "title": "Question",
+      "type": "string"
+    },
+    "review": {
+      "$ref": "#/$defs/Review"
+    },
+    "scenario_id": {
+      "pattern": "^EXP-\\d{2}(-[A-Za-z0-9]+)*$",
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "source_policy": {
+      "$ref": "#/$defs/SourcePolicy"
+    },
+    "spec_version": {
+      "const": "0.1",
+      "default": "0.1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Version",
+      "type": "string"
+    },
+    "world": {
+      "$ref": "#/$defs/WorldSpec"
+    }
+  },
+  "required": [
+    "scenario_id",
+    "version",
+    "title",
+    "module",
+    "phase",
+    "course_codes",
+    "question",
+    "objectives",
+    "limitations",
+    "comparison",
+    "observables",
+    "outcome"
+  ],
+  "title": "ScenarioSpec",
+  "type": "object"
+}

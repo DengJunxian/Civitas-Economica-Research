@@ -60,6 +60,17 @@ ExperimentManifest + config/source/data hashes
 
 来源显式区分 historical、simulation、synthetic_test、teaching_example 和 mock。带 SHA256 的历史输入用于初始化时，后续撮合价格仍是 simulation。真实行情失败默认报错；合成数据必须明确选择。examples/teaching 内的预编排 CSV 和 examples/legacy_presentation 内的旧展示资源仅作教学/历史资产，标准运行不读取它们。
 
+## Civitas Lab 教学层
+
+`lab/` 把课程知识点映射到可运行的教学场景：场景文档先经确定性能力门禁和教师确认，再编译为标准 `ExperimentConfig` 按配对种子运行，结果从归档读取做对照。当前提供 P1 场景 EXP-01/02/05/06/07/08、2×2 组合 EXP-09 和 45 分钟旗舰课包，课程映射待教师核对。
+
+```sh
+.venv/bin/python main.py lab catalog --course 107349
+.venv/bin/python main.py lab run EXP-07 --confirm 张老师
+```
+
+AI 教学席（`main.py lab draft` / `lab explain`）只生成须经门禁和教师确认的场景草案，以及只引用证据卡数值的解释。协议、门禁规则与覆盖范围见 [Civitas Lab 教学层](docs/LAB.md)；HTTP API（`uvicorn lab.api:app`）、课堂包与材料导出见 [API 与课堂材料](docs/lab/API.md)；模型行为与基线结果见 [基线审计](docs/lab/BASELINE_AUDIT_2026-10-20.md)；EXP-17（债券久期）与 EXP-15（NPV/IRR）以确定性计算实验提供，明确区别于多智能体仿真；断网一键技术验收为 `.venv/bin/python scripts/lab_acceptance.py`，记录见 [验收记录](docs/lab/ACCEPTANCE_2026-10-20.md)；已作出的决定与只能由所有者决定的事项见 [决策记录](docs/lab/DECISIONS.md)。
+
 ## 可选功能
 
 ```sh

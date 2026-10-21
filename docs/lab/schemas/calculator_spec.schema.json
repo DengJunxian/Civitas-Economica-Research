@@ -1,0 +1,189 @@
+{
+  "$defs": {
+    "CalculatorPreset": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name",
+        "params"
+      ],
+      "title": "CalculatorPreset",
+      "type": "object"
+    },
+    "Review": {
+      "additionalProperties": false,
+      "properties": {
+        "notes": {
+          "default": "",
+          "title": "Notes",
+          "type": "string"
+        },
+        "reviewed_at": {
+          "default": "",
+          "title": "Reviewed At",
+          "type": "string"
+        },
+        "reviewers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reviewers",
+          "type": "array"
+        },
+        "status": {
+          "default": "pending_teacher_review",
+          "enum": [
+            "draft",
+            "pending_teacher_review",
+            "reviewed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "title": "Review",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A deterministic calculation lab (plan 10.1): formulas, not an agent simulation.",
+  "properties": {
+    "assumptions": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumptions",
+      "type": "array"
+    },
+    "calculator": {
+      "enum": [
+        "bond",
+        "capital_budgeting"
+      ],
+      "title": "Calculator",
+      "type": "string"
+    },
+    "course_codes": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Course Codes",
+      "type": "array"
+    },
+    "defaults": {
+      "additionalProperties": true,
+      "title": "Defaults",
+      "type": "object"
+    },
+    "lab_id": {
+      "pattern": "^EXP-\\d{2}$",
+      "title": "Lab Id",
+      "type": "string"
+    },
+    "levels": {
+      "default": [
+        "undergraduate"
+      ],
+      "items": {
+        "enum": [
+          "undergraduate",
+          "graduate"
+        ],
+        "type": "string"
+      },
+      "title": "Levels",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Limitations",
+      "type": "array"
+    },
+    "module": {
+      "pattern": "^E[1-7](/E[1-7])?$",
+      "title": "Module",
+      "type": "string"
+    },
+    "objectives": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "title": "Objectives",
+      "type": "array"
+    },
+    "phase": {
+      "enum": [
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "title": "Phase",
+      "type": "string"
+    },
+    "presets": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CalculatorPreset"
+      },
+      "title": "Presets",
+      "type": "array"
+    },
+    "question": {
+      "minLength": 1,
+      "title": "Question",
+      "type": "string"
+    },
+    "review": {
+      "$ref": "#/$defs/Review"
+    },
+    "spec_version": {
+      "const": "0.1",
+      "default": "0.1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "lab_id",
+    "version",
+    "title",
+    "module",
+    "phase",
+    "calculator",
+    "course_codes",
+    "question",
+    "objectives",
+    "limitations"
+  ],
+  "title": "CalculatorSpec",
+  "type": "object"
+}

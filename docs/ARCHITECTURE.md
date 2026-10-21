@@ -14,6 +14,7 @@
 | Reproducibility | `experiment_manifest.py`、`reproducibility.py`、`experiments/verify.py` | 复用已有实验 ID/hash/manifest；唯一运行目录、源代码指纹、文件完整性校验与重新执行对比 |
 | Analysis | `market_metrics.py`、`eval/`、`backtester.py`、`calibration/` | 标准路径直接计算交易量、价差、深度、VWAP 等；回测和校准保留独立语义 |
 | Application | `main.py`、`app.py` | CLI 运行/批处理/校验/重跑；UI 配置、实际结果与日志对照 |
+| Teaching | `lab/`、`ui/lab.py` | 课程目录、ScenarioSpec/LessonSpec、确定性能力门禁、编译为标准配置、配对对照与证据卡；AI 场景草案与证据约束解释（lab/ai.py，必经门禁与教师确认）；确定性计算实验（lab/calculators.py，债券久期与资本预算，不接入撮合内核）；只调用 ExperimentRunner，不改核心归档。见 [LAB.md](LAB.md) |
 
 ## 实际机制
 

@@ -10,12 +10,22 @@ from core.experiments.config import ExperimentConfig
 from core.experiments.runner import ExperimentRunner
 
 ROOT = Path(__file__).resolve().parent
-st.set_page_config(page_title="Civitas · 人工金融市场实验", layout="wide")
-st.title("Civitas · 人工金融市场实验")
-page = st.sidebar.radio("工作区", ["配置与运行", "结果与对照", "研究扩展"])
+st.set_page_config(page_title="Civitas Lab · 经济金融实验教学", layout="wide")
+st.title("Civitas Lab · 经济金融实验教学")
+LAB_PAGES = ["课程中心", "场景实验室", "计算实验室", "对照分析", "AI 教学席"]
+page = st.sidebar.radio("工作区", LAB_PAGES + ["配置与运行", "结果与对照", "研究扩展"], key="lab_page")
+st.sidebar.caption("仿真教学用途：结果是模型条件下的输出，不是市场预测或投资建议。")
 output_root = ROOT / "outputs/experiments"
 
-if page == "配置与运行":
+if page in LAB_PAGES:
+    from ui.lab import render_ai_desk, render_calculator_lab, render_comparison, render_course_center, render_scenario_lab
+    lab_root = ROOT / "outputs/lab"
+    {"课程中心": render_course_center,
+     "场景实验室": lambda: render_scenario_lab(lab_root),
+     "计算实验室": render_calculator_lab,
+     "对照分析": lambda: render_comparison(lab_root),
+     "AI 教学席": lambda: render_ai_desk(lab_root)}[page]()
+elif page == "配置与运行":
     content = st.text_area("实验配置（YAML）", (ROOT / "examples/experiments/minimal.yaml").read_text(), height=400)
     if st.button("校验配置"):
         try:

@@ -1,0 +1,50 @@
+spec_version: "0.1"
+lesson_id: LESSON-MKT-005
+version: 0.1.0
+title: 下调印花税会改变市场吗？（EXP-08 课堂包）
+duration_minutes: 20
+primary_courses:
+  - {code: "107349", name: 金融机构与金融市场, level: undergraduate}
+  - {code: "214822", name: 金融机构与金融市场, level: graduate}
+objectives:
+  - 能用配对重跑陈述模型条件下的差异，并区分费用变化与行为变化
+  - 能说明标准模型中税率通过什么通道影响后续交易
+  - 能说明为什么不能据此推出现实政策效果
+scenarios: [EXP-08]
+stages:
+  - {name: 课前预测, start_min: 0, end_min: 3, teacher: 说明第 20 步印花税从 0.05% 降到 0.025%, student: 预测降税后成交量与费用的变化}
+  - {name: 运行与观察, start_min: 3, end_min: 10, teacher: 运行 EXP-08，先确认第 20 步前两组路径完全一致, student: 记录两组的成交量、成交笔数和累计费用, scenario_id: EXP-08, groups: [A, T]}
+  - {name: 机制追问, start_min: 10, end_min: 15, teacher: 展示配对差异：费用下降而成交量差为 0, student: 找出税率在模型中进入了哪个环节, scenario_id: EXP-08, groups: [A, T]}
+  - {name: 讨论与局限, start_min: 15, end_min: 20, teacher: 讨论模型结论与现实政策的距离, student: 写出一条证据、一条局限和一个模型改进建议}
+worksheet:
+  - {id: Q1, text: 第 20 步之前两组的路径完全相同吗？这说明了配对设计的什么作用？, rubric_dimension: 实验设计}
+  - {id: Q2, text: 降税后哪些指标变了、哪些没变？请引用逐种子差异。, rubric_dimension: 证据推理}
+  - {id: Q3, text: 在本模型中，税率通过什么通道影响交易？为什么成交量没有变化？, rubric_dimension: 概念准确}
+  - {id: Q4, text: 能否据此说现实中降低印花税不会影响交易？为什么？, rubric_dimension: 模型边界}
+level_tasks:
+  - level: undergraduate
+    knowledge: 定义印花税与交易成本，预测降税的影响
+    design: 比较给定的基准税率组与降税组
+    evidence: 解释费用曲线与成交量差异为 0 的含义
+    deliverable: 课堂工作纸 Q1–Q4
+  - level: graduate
+    knowledge: 区分结算通道（现金变化）与决策通道（对成本的行为响应）
+    design: 提出一个让决策读取交易成本的模型改进，并写出验证方案（不在本课实现）
+    evidence: 以零差异结果论证当前模型能回答和不能回答的问题
+    deliverable: 一页模型评估说明，附 run_id
+guidance:
+  prediction: 印花税减半后，成交量会增加吗？
+  steps:
+    - 运行 EXP-08 两组对照
+    - 确认第 20 步前两组路径重合
+    - 查看累计费用、成交量与成交笔数的配对差异
+    - 引导学生在课题卡的模型限制中找到原因
+  probes:
+    - 费用下降了，为什么成交量一点没变？
+    - 如果投资者在决策时考虑交易成本，你预期会怎样？
+  negative_results: 标准向量决策不读取税率，降税只改变卖方结算现金，10 步内不足以改变下单数量，因此成交量差为 0。本课把这一零结果作为识别机制通道的教学材料
+interpretation_rules:
+  - 只陈述模型条件下的差异，不推出现实政策效果
+  - 零差异结果必须如实报告，并说明来自哪个模型假设
+mechanism_boundary: 这里的降税严格指单资产卖方印花税，不是公司税、货币政策或财政乘数；模型中没有投资者对税费的直接行为响应。
+review: {status: pending_teacher_review}
