@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from math import ceil
 from typing import Literal
 
 import yaml
@@ -75,6 +76,21 @@ class LLMConfig(Settings):
     max_retries: int = Field(0, ge=0, le=5, strict=True)
 
 
+class CognitiveConfig(Settings):
+    """Controlled cognition study configuration, inactive in default runs."""
+
+    llm_share: float = Field(0.25, gt=0, le=1)
+    decision_interval: int = Field(5, ge=1, strict=True)
+    memory_enabled: bool = True
+    social_enabled: bool = True
+    reflection_enabled: bool = False
+    reflection_interval: int = Field(20, ge=1, strict=True)
+    memory_limit: int = Field(20, ge=1, le=100, strict=True)
+    social_window: int = Field(3, ge=1, le=30, strict=True)
+    max_social_messages: int = Field(8, ge=1, le=100, strict=True)
+    history_window: int = Field(10, ge=1, le=100, strict=True)
+
+
 class ExperimentConfig(Settings):
     schema_version: Literal[1] = 1
     name: str = Field("minimal_market", pattern=r"^[A-Za-z0-9_-]{1,64}$")
@@ -82,11 +98,12 @@ class ExperimentConfig(Settings):
     seed: int = Field(42, ge=0, lt=2**32, strict=True)
     steps: int = Field(30, ge=1, le=100000, strict=True)
     n_agents: int = Field(64, ge=2, le=100000, strict=True)
-    decision_mode: Literal["vectorized", "profile_heuristic", "llm", "mock"] = "vectorized"
+    decision_mode: Literal["vectorized", "profile_heuristic", "llm", "cognitive_llm", "mock"] = "vectorized"
     market_regime: str = "default"
     market: MarketConfig = Field(default_factory=MarketConfig)
     social: SocialConfig = Field(default_factory=SocialConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
+    cognitive: CognitiveConfig = Field(default_factory=CognitiveConfig)
     events: tuple[EventConfig, ...] = ()
     historical_input: HistoricalInput | None = None
 
@@ -101,10 +118,23 @@ class ExperimentConfig(Settings):
         if self.mode == "research" and (self.decision_mode == "mock" or
                 (self.historical_input and self.historical_input.origin != "historical")):
             raise ValueError("research mode does not accept Mock decisions or non-historical input snapshots")
-        if self.decision_mode == "llm" and (not self.llm.model or self.llm.max_calls < self.n_agents * self.steps):
-            raise ValueError("LLM mode requires an explicit model and sufficient explicit max_calls budget")
-        if self.decision_mode == "llm" and ((self.llm.provider == "zhipu") != self.llm.model.startswith("glm-")):
-            raise ValueError("model prefix and provider disagree")
+        if self.decision_mode in {"llm", "cognitive_llm"}:
+            if self.cognitive.reflection_enabled and not self.cognitive.memory_enabled:
+                raise ValueError("Cognitive reflection requires memory_enabled=true")
+            if self.decision_mode == "llm":
+                required_calls = self.n_agents * self.steps
+            else:
+                cohort = max(1, ceil(self.n_agents * self.cognitive.llm_share))
+                decisions = 1 + (self.steps - 1) // self.cognitive.decision_interval
+                reflections = ((self.steps - 1) // self.cognitive.reflection_interval
+                               if self.cognitive.reflection_enabled else 0)
+                required_calls = cohort * (decisions + reflections)
+            if not self.llm.model or self.llm.max_calls < required_calls:
+                raise ValueError(
+                    f"LLM mode requires explicit model and max_calls >= {required_calls}"
+                )
+            if (self.llm.provider == "zhipu") != self.llm.model.startswith("glm-"):
+                raise ValueError("model prefix and provider disagree")
         return self
 
 
