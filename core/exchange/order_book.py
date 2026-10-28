@@ -207,7 +207,7 @@ class OrderBook:
             order.status, order.reason = OrderStatus.REJECTED, "invalid order fields"
             return False
         if order.symbol != self.symbol:
-            order.status = OrderStatus.REJECTED
+            order.status, order.reason = OrderStatus.REJECTED, "symbol mismatch"
             return False
 
         self._normalize_order_timestamp(order)
@@ -226,7 +226,7 @@ class OrderBook:
             return False
 
         if order.order_type == OrderType.LIMIT and not self._check_price_limit(order.price):
-            order.status = OrderStatus.REJECTED
+            order.status, order.reason = OrderStatus.REJECTED, "price outside limit"
             return False
         if order.order_type in {OrderType.IOC, OrderType.FOK, OrderType.POST_ONLY} and self.market_rules.is_feature_enabled("market_rules_v1"):
             if not self._check_price_limit(order.price):

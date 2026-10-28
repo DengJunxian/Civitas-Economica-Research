@@ -79,7 +79,7 @@ class LLMConfig(Settings):
 class CognitiveConfig(Settings):
     """Controlled cognition study configuration, inactive in default runs."""
 
-    decision_policy: Literal["llm", "random", "profile_rule", "claim_rule"] = "llm"
+    decision_policy: Literal["llm", "random", "profile_rule", "claim_rule", "passive_quote"] = "llm"
     llm_share: float = Field(0.25, gt=0, le=1)
     decision_interval: int = Field(5, ge=1, strict=True)
     memory_enabled: bool = True

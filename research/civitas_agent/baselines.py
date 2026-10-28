@@ -72,6 +72,50 @@ def deterministic_intent(
     prior = _finite(history[-2]) if len(history) >= 2 else price
     trend = price / prior - 1 if prior > 0 else 0.0
 
+    if policy == "passive_quote":
+        # A transparent counterparty-SUPPLY diagnostic, NOT a calibrated
+        # investor model or a promise of market realism. Choose the thinner
+        # visible book side and place a genuine account-backed limit order
+        # slightly away from the opposite top quote. The unchanged adapter,
+        # order book and ClearingHouse may reject, rest or execute the order.
+        book = observation["market"].get("depth", {})
+        if not isinstance(book, dict):
+            raise ValueError("Passive quote policy requires visible order-book depth")
+        bids = book.get("bids", [])
+        asks = book.get("asks", [])
+        if not isinstance(bids, list) or not isinstance(asks, list):
+            raise ValueError("Malformed visible depth levels")
+        def qty(rows: list) -> float:
+            total = 0.0
+            for row in rows:
+                if not isinstance(row, dict):
+                    raise ValueError("Malformed visible order-book level")
+                value = _finite(row.get("qty", row.get("quantity", 0)))
+                if value < 0:
+                    raise ValueError("Negative visible order-book depth")
+                total += value
+            return total
+        bid_qty, ask_qty = qty(bids), qty(asks)
+        if bid_qty < ask_qty:
+            action = "BUY"
+        elif ask_qty < bid_qty:
+            action = "SELL"
+        else:
+            action = ("BUY", "SELL")[rng.randrange(2)]
+        cash_ok = _finite(account.get("available_cash")) >= price * 1.001
+        shares_ok = int(_finite(account.get("sellable_shares"))) >= 1
+        if action == "BUY" and not cash_ok:
+            action = "SELL" if shares_ok else "HOLD"
+        elif action == "SELL" and not shares_ok:
+            action = "BUY" if cash_ok else "HOLD"
+        return {
+            "action": action,
+            "fraction": 0.05 if action != "HOLD" else 0.0,
+            # The existing adapter interprets negative ticks as a passive
+            # bid below the best ask or a passive ask above the best bid.
+            "aggressiveness_ticks": -3,
+        }
+
     if policy == "profile_rule":
         # A disclosed deterministic trend/reference-price policy. This is
         # deliberately independent of synthetic news: a pure persona control.
