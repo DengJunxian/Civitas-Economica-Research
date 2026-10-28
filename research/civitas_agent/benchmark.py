@@ -123,8 +123,21 @@ def summarize(
                 if usage["model_call_records"] != 0:
                     raise ValueError("Deterministic control unexpectedly made model calls")
             else:
-                if usage["model_call_records"] < meta["logical_llm_calls_per_world"]:
-                    raise ValueError("Missing recorded LLM calls")
+                # An explicitly fake, offline, or silently substituted model
+                # response must never be promoted to research evidence.
+                records = json.loads((root / "model_calls.json").read_text())
+                if (usage["model_call_records"] != meta["logical_llm_calls_per_world"]
+                        or usage["model_failed_calls"] != 0):
+                    raise ValueError("LLM research run has missing/failed/extra model calls")
+                if any(
+                    record.get("provider") != cfg.llm.provider
+                    or not record.get("ok", False)
+                    for record in records
+                ):
+                    raise ValueError(
+                        "LLM research run must have successful calls from the "
+                        "explicitly selected real model provider"
+                    )
             quality = plan["quality_gates"]
             problems = []
             if measurement["active_step_share"] < quality["min_active_step_share"]:
@@ -208,7 +221,8 @@ def summarize(
         ),
         "contains_confirmatory_inference": False,
         "contains_real_market_validation": False,
-        "contains_paid_models": not rule_only,
+        "contains_llm_arms": not rule_only,
+        "provider_billing_independently_verified": False,
         "independent_worlds": len(seeds),
         "arm_count": len(expected),
         "reference_arm": ref,
