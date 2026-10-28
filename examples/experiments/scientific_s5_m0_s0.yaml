@@ -1,0 +1,50 @@
+# Controlled S5 rumor experiment: negative FALSE claim.
+# Four arms share all fields except memory/social treatment and name.
+# No paid calls occur until explicitly executed with real API credentials.
+schema_version: 1
+name: scientific_s5_m0_s0
+mode: research
+seed: 20261028
+steps: 100
+n_agents: 64
+decision_mode: cognitive_llm
+market:
+  backend: python
+  initial_price: 3000.0
+  board_lot: 1
+  t_plus_one: false
+social:
+  topology: small_world
+  neighbors: 6
+  initial_infected: 0
+cognitive:
+  llm_share: 0.25
+  decision_interval: 10
+  memory_enabled: false
+  social_enabled: false
+  social_mode: news
+  order_schedule: seeded_per_step
+  reflection_enabled: false
+  memory_limit: 20
+  social_window: 3
+  max_social_messages: 8
+  history_window: 10
+scientific_world:
+  enabled: true
+  shocks:
+    - shock_id: rumor_one
+      source_id: issuer_A
+      step: 21
+      reveal_step: 51
+      polarity: -1
+      magnitude: 0.03
+      truthful: false
+      direct_fraction: 0.25
+llm:
+  provider: deepseek
+  model: replace-with-supported-model
+  temperature: 0.0
+  timeout: 30.0
+  max_calls: 160
+  max_retries: 0
+events: []
