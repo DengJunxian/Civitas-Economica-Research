@@ -218,3 +218,34 @@ def test_shock_schema_rejects_unphysical_or_duplicate_identifiers():
         ScientificWorldConfig.model_validate({
             "enabled": True, "shocks": [shock(), shock()],
         })
+
+
+def test_scientific_analyzer_exports_paired_benchmark_and_shock_windows(tmp_path):
+    from research.civitas_agent.analysis import analyze
+
+    for memory, social in ((False, False), (True, False), (False, True), (True, True)):
+        run_fake(tmp_path, cfg(memory=memory, social=social))
+    result = analyze(tmp_path, tmp_path / "analysis", bootstrap=100)
+    assert result["complete_worlds"] == 1
+    assert result["run_count"] == 4
+    assert result["world_type"] == "controlled_synthetic_benchmark"
+    assert "shock_windows.csv" in result["artifacts_sha256"]
+    effects = pd.read_csv(tmp_path / "analysis" / "effect_summary.csv")
+    assert set(("mean_abs_fundamental_deviation", "final_abs_fundamental_deviation",
+                "information_reach_share")).issubset(set(effects.metric))
+    assert (effects.inferential_status == "descriptive_only").all()
+    windows = pd.read_csv(tmp_path / "analysis" / "shock_windows.csv")
+    assert len(windows) == 4
+    assert set(windows.arm) == {"M0S0", "M1S0", "M0S1", "M1S1"}
+    assert set(windows.verdict) == {"supported"}
+    assert windows.unverified_mean_abs_deviation.notna().all()
+    assert windows.post_verification_mean_abs_deviation.notna().all()
+
+
+def test_scientific_rejects_mixed_truth_in_paired_factorial(tmp_path):
+    from research.civitas_agent.analysis import analyze
+
+    run_fake(tmp_path, cfg(truthful=True, memory=False, social=False))
+    run_fake(tmp_path, cfg(truthful=False, memory=True, social=False))
+    with pytest.raises(ValueError, match="Arms differ beyond"):
+        analyze(tmp_path, tmp_path / "analysis", bootstrap=100)
