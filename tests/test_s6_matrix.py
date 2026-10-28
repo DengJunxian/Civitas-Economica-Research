@@ -111,7 +111,7 @@ def test_s6_heldout_guard_and_config_integrity(tmp_path):
                   partition="heldout_worlds", rule_only=True)
     config_path = plan_dir / "configs" / "s6_B0_random.yaml"
     config_path.write_text(config_path.read_text() + "\n# changed\n")
-    with pytest.raises(ValueError, match="has changed"):
+    with pytest.raises(ValueError, match="Tampered frozen"):
         run_rule_controls(plan_dir, tmp_path / "runs", partition="development")
 
 
