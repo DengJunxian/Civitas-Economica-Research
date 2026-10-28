@@ -164,6 +164,17 @@ enabled reflection (off in examples). Four arms × three independent seeds =
 before larger experiments. Examples use `replace-with-supported-model` as
 a **non-working placeholder**, not a promise of availability.
 
+For a **truth-flip counterfactual**, compare the separately configured
+`scientific_s5_m1_s1.yaml` (false negative claim) with
+`scientific_s5_true_m1_s1.yaml` (identical negative claim, but truthful).
+For a **no-news placebo**, use `scientific_s5_no_claim_m1_s1.yaml`.
+These are distinct *research questions*: the current four-arm analyzer
+correctly rejects pooling true/false/no-news configurations into the same
+memory × social factorial contrast. Analyze them as separate matched
+scenario comparisons and explicitly distinguish claim effects from the
+latent benchmark change. Neither comparison has been executed with a
+live LLM provider.
+
 ## 6. Still needed before paper-grade results
 
 1. **Independent scientific control checks:** compare true/false scenarios
