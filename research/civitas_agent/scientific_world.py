@@ -71,6 +71,11 @@ class SyntheticInformationWorld:
         self.revelations: list[dict[str, Any]] = []
         self.fundamental_rows: list[dict[str, Any]] = []
         self.order_schedules: list[dict[str, Any]] = []
+        # An unread-inbox cursor is separate from the optional long-term
+        # cognitive memory. Once read, a bulletin is not replayed forever.
+        self.last_observed_step: dict[str, int] = {
+            aid: 0 for aid in self.active_ids
+        }
         self.new_deliveries = 0
 
     @staticmethod
@@ -163,15 +168,20 @@ class SyntheticInformationWorld:
             raise ValueError("As-of observation requested for incorrect step")
         if agent_id not in self.active_set:
             raise ValueError("Unknown cognitive investor")
+        last_read = self.last_observed_step[agent_id]
         claims = [
             {key: value for key, value in row.items() if key != "agent_id"}
             for row in self.deliveries
-            if row["agent_id"] == agent_id and row["received_step"] <= step
+            if row["agent_id"] == agent_id
+            and last_read < row["received_step"] <= step
         ]
         verified = [
-            dict(row) for row in self.revelations if row["reveal_step"] <= step
+            dict(row) for row in self.revelations
+            if last_read < row["reveal_step"] <= step
         ]
-        # Track record uses revealed information only, never private ground truth.
+        # The observation is a NEW-information inbox, not a permanent
+        # history store. Otherwise M0 would secretly retain public memory.
+        # All source labels here are derived from currently unread verdicts.
         record: dict[str, dict[str, int]] = {}
         for row in verified:
             stats = record.setdefault(
@@ -183,6 +193,14 @@ class SyntheticInformationWorld:
             "public_verifications": verified,
             "observed_source_track_records": record,
         }
+
+    def acknowledge_observation(self, agent_id: str, step: int) -> None:
+        """Advance the inbox cursor only after a successful model decision."""
+        if agent_id not in self.active_set or step != self.step:
+            raise ValueError("Cannot acknowledge an unknown or future observation")
+        if step <= self.last_observed_step[agent_id]:
+            raise ValueError("Duplicate or regressed observation acknowledgment")
+        self.last_observed_step[agent_id] = step
 
     def add_order_schedule(self, step: int, ordered_agent_ids: list[str]) -> None:
         if step != self.step or len(ordered_agent_ids) != len(set(ordered_agent_ids)):
@@ -234,6 +252,7 @@ class SyntheticInformationWorld:
                 ],
                 "active_cognitive_agents": list(self.active_ids),
                 "information_flow": "direct seeds + previous-step cognitive-neighbor relay",
+                "observation_semantics": "new-information inbox; acknowledgment on successful model decision",
                 "latent_value_affects_order_matching": False,
                 "social_news_relay_enabled": (
                     self.social_enabled and self.social_mode in {"news", "both"}
