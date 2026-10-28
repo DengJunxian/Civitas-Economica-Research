@@ -206,28 +206,27 @@ class CognitiveProtocol:
         ]
         self.price_history.append(float(price))
         due = (step - 1) % self.config.decision_interval == 0
-        if not due:
-            return
-        for i, aid in enumerate(agent_ids):
-            if aid not in self.active_set:
-                continue
-            fills = sum(
-                int(t.quantity) for t in trades
-                if t.buyer_agent_id == aid or t.seller_agent_id == aid
-            )
-            account = accounts[aid]
-            outcome = {
-                "step": step, "agent_id": aid,
-                "action": {1: "BUY", -1: "SELL", 0: "HOLD"}[int(actions[i])],
-                "requested_quantity": int(quantities[i]),
-                "filled_quantity": fills,
-                "observed_price": float(price),
-                "marked_wealth": float(account.cash + account.shares * price),
-            }
-            self.outcomes.append(outcome)
-            if self.config.memory_enabled:
-                self.memory[aid].append(outcome)
-                self.memory[aid] = self.memory[aid][-self.config.memory_limit:]
+        if due:
+            for i, aid in enumerate(agent_ids):
+                if aid not in self.active_set:
+                    continue
+                fills = sum(
+                    int(t.quantity) for t in trades
+                    if t.buyer_agent_id == aid or t.seller_agent_id == aid
+                )
+                account = accounts[aid]
+                outcome = {
+                    "step": step, "agent_id": aid,
+                    "action": {1: "BUY", -1: "SELL", 0: "HOLD"}[int(actions[i])],
+                    "requested_quantity": int(quantities[i]),
+                    "filled_quantity": fills,
+                    "observed_price": float(price),
+                    "marked_wealth": float(account.cash + account.shares * price),
+                }
+                self.outcomes.append(outcome)
+                if self.config.memory_enabled:
+                    self.memory[aid].append(outcome)
+                    self.memory[aid] = self.memory[aid][-self.config.memory_limit:]
         if not (self.config.memory_enabled and self.config.reflection_enabled):
             return
         if step >= self.total_steps or step % self.config.reflection_interval:
