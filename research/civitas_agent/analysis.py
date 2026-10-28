@@ -28,6 +28,12 @@ OUTCOMES = (
     "mean_depth",
 )
 
+S5_OUTCOMES = (
+    "mean_abs_fundamental_deviation",
+    "final_abs_fundamental_deviation",
+    "information_reach_share",
+)
+
 
 def _discover(root: Path) -> list[Path]:
     candidates = [root] if (root / "config.json").is_file() else [
@@ -93,6 +99,62 @@ def _measure(path: Path) -> dict[str, Any]:
     return rows
 
 
+def _s5_measure(path: Path, cfg: ExperimentConfig, cohort_size: int) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Synthetic benchmark comparison; it is not an empirical price target."""
+    market = pd.read_csv(path / "metrics.csv")
+    ground = pd.read_csv(path / "study_fundamentals.csv")
+    if len(market) != len(ground) or not (market.step == ground.step).all():
+        raise ValueError(f"Misaligned market/fundamental paths in {path}")
+    deviation = market["absolute_price_deviation"].to_numpy(dtype=float)
+    if not np.isfinite(deviation).all() or np.any(deviation < 0):
+        raise ValueError(f"Invalid synthetic benchmark deviation in {path}")
+    deliveries = [
+        json.loads(line) for line in (path / "study_news_exposures.jsonl").read_text(
+            encoding="utf-8"
+        ).splitlines()
+    ]
+    shocks = sorted(cfg.scientific_world.shocks, key=lambda x: x.step)
+    reach = []
+    windows: list[dict[str, Any]] = []
+    for index, shock in enumerate(shocks):
+        seen = {
+            row["agent_id"] for row in deliveries
+            if row["shock_id"] == shock.shock_id
+        }
+        fraction = len(seen) / cohort_size
+        reach.append(fraction)
+        next_step = shocks[index + 1].step if index + 1 < len(shocks) else cfg.steps + 1
+        pre = market[(market.step >= max(1, shock.step - 5)) & (market.step < shock.step)]
+        rumor = market[(market.step >= shock.step) & (market.step < shock.reveal_step)]
+        post = market[(market.step >= shock.reveal_step) &
+                      (market.step <= min(cfg.steps, shock.reveal_step + 5, next_step - 1))]
+        windows.append({
+            "run_dir": str(path.resolve()),
+            "shock_id": shock.shock_id,
+            "source_id": shock.source_id,
+            "claim_step": shock.step,
+            "reveal_step": shock.reveal_step,
+            "verdict": "supported" if shock.truthful else "refuted",
+            "pre_mean_abs_deviation": (
+                float(pre.absolute_price_deviation.mean()) if len(pre) else None
+            ),
+            "unverified_mean_abs_deviation": (
+                float(rumor.absolute_price_deviation.mean()) if len(rumor) else None
+            ),
+            "post_verification_mean_abs_deviation": (
+                float(post.absolute_price_deviation.mean()) if len(post) else None
+            ),
+            "cognitive_reach_share": fraction,
+            "causal_interpretation": "descriptive_window_only",
+        })
+    return ({
+        "mean_abs_fundamental_deviation": float(np.mean(deviation)),
+        "final_abs_fundamental_deviation": float(deviation[-1]),
+        "information_reach_share": float(np.mean(reach)) if reach else 0.0,
+        "shock_count": len(shocks),
+    }, windows)
+
+
 def _usage(path: Path) -> dict[str, Any]:
     calls = json.loads((path / "model_calls.json").read_text(encoding="utf-8"))
     tokens = [
@@ -124,13 +186,19 @@ def analyze(root: Path, output: Path, *, bootstrap: int = 1000) -> dict[str, Any
     if not paths:
         raise ValueError(f"No experiment config.json found beneath {root}")
     runs: list[dict[str, Any]] = []
+    event_windows: list[dict[str, Any]] = []
     signatures: set[str] = set()
+    s5_enabled: bool | None = None
     for path in paths:
         raw = json.loads((path / "config.json").read_text(encoding="utf-8"))
         if raw.get("decision_mode") != "cognitive_llm":
             continue
         cfg = ExperimentConfig.model_validate(raw)
         verify_run(path)  # Fail rather than silently analyze tampered archives.
+        if s5_enabled is None:
+            s5_enabled = cfg.scientific_world.enabled
+        if s5_enabled != cfg.scientific_world.enabled:
+            raise ValueError("Cannot mix scientific and legacy cognitive runs")
         signatures.add(_harmonized_config(cfg))
         protocol = json.loads((path / "cognitive_protocol.json").read_text(encoding="utf-8"))
         row = {
@@ -141,6 +209,11 @@ def analyze(root: Path, output: Path, *, bootstrap: int = 1000) -> dict[str, Any
         }
         if row["steps"] != cfg.steps:
             raise ValueError(f"Step count mismatch in {path}")
+        if cfg.scientific_world.enabled:
+            study, windows = _s5_measure(path, cfg, row["llm_cohort_size"])
+            row.update(study)
+            for window in windows:
+                event_windows.append({**window, "seed": cfg.seed, "arm": _arm(cfg)})
         runs.append(row)
     if not runs:
         raise ValueError("No completed cognitive_llm runs were found")
@@ -156,9 +229,10 @@ def analyze(root: Path, output: Path, *, bootstrap: int = 1000) -> dict[str, Any
     for seed, arms in groups.items():
         if set(arms) != expected:
             raise ValueError(f"Incomplete factorial world seed={seed}: missing {sorted(expected-set(arms))}")
+    metrics_to_compare = OUTCOMES + (S5_OUTCOMES if s5_enabled else ())
     contrasts: list[dict[str, Any]] = []
     for seed, arms in sorted(groups.items()):
-        for metric in OUTCOMES:
+        for metric in metrics_to_compare:
             y00 = float(arms["M0S0"][metric])
             y10 = float(arms["M1S0"][metric])
             y01 = float(arms["M0S1"][metric])
@@ -171,7 +245,7 @@ def analyze(root: Path, output: Path, *, bootstrap: int = 1000) -> dict[str, Any
                 "y00": y00, "y10": y10, "y01": y01, "y11": y11,
             })
     summary: list[dict[str, Any]] = []
-    for metric in OUTCOMES:
+    for metric in metrics_to_compare:
         rows = [r for r in contrasts if r["metric"] == metric]
         for effect in ("memory_effect_at_s0", "social_effect_at_m0", "interaction"):
             values = [float(r[effect]) for r in rows]
@@ -187,6 +261,14 @@ def analyze(root: Path, output: Path, *, bootstrap: int = 1000) -> dict[str, Any
         "paired_effects.csv": pd.DataFrame(contrasts).sort_values(["metric", "seed"]),
         "effect_summary.csv": pd.DataFrame(summary).sort_values(["metric", "effect"]),
     }
+    if s5_enabled:
+        files["shock_windows.csv"] = pd.DataFrame(event_windows, columns=[
+            "run_dir", "seed", "arm", "shock_id", "source_id", "claim_step",
+            "reveal_step", "verdict", "pre_mean_abs_deviation",
+            "unverified_mean_abs_deviation",
+            "post_verification_mean_abs_deviation", "cognitive_reach_share",
+            "causal_interpretation",
+        ]).sort_values(["seed", "arm", "claim_step"])
     for filename, frame in files.items():
         frame.to_csv(output / filename, index=False)
     manifest = {
@@ -201,11 +283,14 @@ def analyze(root: Path, output: Path, *, bootstrap: int = 1000) -> dict[str, Any
             "memory_effect_at_s0": "Y10-Y00",
             "social_effect_at_m0": "Y01-Y00",
         },
+        "world_type": "controlled_synthetic_benchmark" if s5_enabled else "market_only",
         "limitations": [
-            "No fundamental value or empirical validation",
-            "No claims from controlled mock LLM tests",
+            ("Synthetic latent fundamental is not empirically calibrated"
+             if s5_enabled else "No latent fundamental or empirical validation"),
+            "No scientific claims from controlled fake-LLM tests",
             "Agent/time-step observations are not independent replicates",
             "Inactivity and missing two-sided quotes must be inspected",
+            "Shock windows are descriptive and do not identify effects without control arms",
         ],
         "artifacts_sha256": {
             name: hashlib.sha256((output / name).read_bytes()).hexdigest()

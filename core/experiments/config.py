@@ -89,6 +89,42 @@ class CognitiveConfig(Settings):
     social_window: int = Field(3, ge=1, le=30, strict=True)
     max_social_messages: int = Field(8, ge=1, le=100, strict=True)
     history_window: int = Field(10, ge=1, le=100, strict=True)
+    social_mode: Literal["intent", "news", "both"] = "intent"
+    order_schedule: Literal["fixed", "seeded_per_step"] = "fixed"
+
+
+class InformationShock(Settings):
+    """Synthetic claim: its truth value is private until the reveal step."""
+
+    shock_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,48}$")
+    source_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,48}$")
+    step: int = Field(ge=1, strict=True)
+    reveal_step: int = Field(ge=2, strict=True)
+    polarity: Literal[-1, 1]
+    magnitude: float = Field(gt=0, le=0.20)
+    truthful: bool
+    direct_fraction: float = Field(0.25, gt=0, le=1)
+
+    @model_validator(mode="after")
+    def validate_timing(self):
+        if self.reveal_step <= self.step:
+            raise ValueError("reveal_step must follow the claim step")
+        return self
+
+
+class ScientificWorldConfig(Settings):
+    """Controlled latent-value benchmark; opt-in, not historical replay."""
+
+    enabled: bool = False
+    initial_fundamental: float | None = Field(None, gt=0)
+    shocks: tuple[InformationShock, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_shocks(self):
+        ids = [shock.shock_id for shock in self.shocks]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Scientific shock_id values must be unique")
+        return self
 
 
 class ExperimentConfig(Settings):
@@ -104,6 +140,7 @@ class ExperimentConfig(Settings):
     social: SocialConfig = Field(default_factory=SocialConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     cognitive: CognitiveConfig = Field(default_factory=CognitiveConfig)
+    scientific_world: ScientificWorldConfig = Field(default_factory=ScientificWorldConfig)
     events: tuple[EventConfig, ...] = ()
     historical_input: HistoricalInput | None = None
 
@@ -115,6 +152,19 @@ class ExperimentConfig(Settings):
             raise ValueError("initial_infected exceeds population")
         if any(e.step > self.steps or (e.kind == "panic" and e.value > self.n_agents) for e in self.events):
             raise ValueError("event exceeds experiment step/population bounds")
+        if self.scientific_world.enabled:
+            if self.decision_mode != "cognitive_llm":
+                raise ValueError("Scientific world requires cognitive_llm decision mode")
+            if self.historical_input is not None:
+                raise ValueError("Synthetic scientific world cannot use historical_input")
+            if self.events:
+                raise ValueError("Scientific world cannot mix uncontrolled legacy market events")
+            if self.cognitive.social_mode == "intent":
+                raise ValueError("Scientific news experiment requires social_mode=news or both")
+            if any(shock.reveal_step > self.steps for shock in self.scientific_world.shocks):
+                raise ValueError("Scientific shock reveal_step exceeds experiment steps")
+        elif self.cognitive.social_mode in {"news", "both"} and self.decision_mode == "cognitive_llm":
+            raise ValueError("News social_mode requires scientific_world.enabled")
         if self.mode == "research" and (self.decision_mode == "mock" or
                 (self.historical_input and self.historical_input.origin != "historical")):
             raise ValueError("research mode does not accept Mock decisions or non-historical input snapshots")

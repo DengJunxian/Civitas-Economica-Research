@@ -1,0 +1,42 @@
+# Controlled S5 rumor experiment: no-claim placebo.
+# Four arms share all fields except memory/social treatment and name.
+# No paid calls occur until explicitly executed with real API credentials.
+schema_version: 1
+name: scientific_s5_no_claim_m1_s1
+mode: research
+seed: 20261028
+steps: 100
+n_agents: 64
+decision_mode: cognitive_llm
+market:
+  backend: python
+  initial_price: 3000.0
+  board_lot: 1
+  t_plus_one: false
+social:
+  topology: small_world
+  neighbors: 6
+  initial_infected: 0
+cognitive:
+  llm_share: 0.25
+  decision_interval: 10
+  memory_enabled: true
+  social_enabled: true
+  social_mode: news
+  order_schedule: seeded_per_step
+  reflection_enabled: false
+  memory_limit: 20
+  social_window: 3
+  max_social_messages: 8
+  history_window: 10
+scientific_world:
+  enabled: true
+  shocks: []
+llm:
+  provider: deepseek
+  model: replace-with-supported-model
+  temperature: 0.0
+  timeout: 30.0
+  max_calls: 160
+  max_retries: 0
+events: []
