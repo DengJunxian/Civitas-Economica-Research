@@ -29,6 +29,8 @@ COMPARE = (
     "empty_book_share", "bid_only_share", "ask_only_share",
     "mean_bid_depth", "mean_ask_depth", "order_rejection_share",
     "ttl_cancellation_share", "total_volume",
+    "buy_decision_share", "sell_decision_share",
+    "requested_buy_quantity", "requested_sell_quantity",
 )
 
 
