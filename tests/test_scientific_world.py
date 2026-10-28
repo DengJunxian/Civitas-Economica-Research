@@ -169,9 +169,14 @@ def test_end_to_end_validates_both_truth_cases_and_no_market_price_override(tmp_
     assert early_true == early_false
     assert all(not p["information_signals"]["public_verifications"] for p in early_true)
     assert all("truthful" not in json.dumps(p) for p in early_true)
-    late_true = [p for p in true_model.prompts if p["step"] >= 5]
-    assert all(p["information_signals"]["public_verifications"] for p in late_true)
-    assert all("fundamental_value" not in p["information_signals"] for p in late_true)
+    at_verification = [p for p in true_model.prompts if p["step"] == 5]
+    later = [p for p in true_model.prompts if p["step"] == 6]
+    assert all(p["information_signals"]["public_verifications"] for p in at_verification)
+    # Public verification is a one-time bulletin, not a hidden memory store.
+    assert all(not p["information_signals"]["public_verifications"] for p in later)
+    assert all(any(entry.get("event") == "public_verification"
+                   for entry in p["episodic_memory"]) for p in later)
+    assert all("fundamental_value" not in p["information_signals"] for p in later)
 
 
 def test_schedule_differs_from_fixed_and_is_seed_stable(tmp_path):
@@ -249,3 +254,33 @@ def test_scientific_rejects_mixed_truth_in_paired_factorial(tmp_path):
     run_fake(tmp_path, cfg(truthful=False, memory=True, social=False))
     with pytest.raises(ValueError, match="Arms differ beyond"):
         analyze(tmp_path, tmp_path / "analysis", bootstrap=100)
+
+
+def test_unread_bulletins_are_acked_only_after_observation():
+    world = build_world(truthful=False, social=False)
+    world.advance(1)
+    world.advance(2)
+    recipient = world.deliveries[0]["agent_id"]
+    assert len(world.observation_for(recipient, 2)["received_claims"]) == 1
+    # Reading without acknowledgment must not lose the message.
+    assert len(world.observation_for(recipient, 2)["received_claims"]) == 1
+    world.acknowledge_observation(recipient, 2)
+    assert not world.observation_for(recipient, 2)["received_claims"]
+    with pytest.raises(ValueError, match="Duplicate"):
+        world.acknowledge_observation(recipient, 2)
+    world.advance(3)
+    assert not world.observation_for(recipient, 3)["received_claims"]
+
+
+def test_no_memory_arm_does_not_receive_repeated_old_news(tmp_path):
+    path, fake = run_fake(tmp_path, cfg(memory=False, social=False))
+    assert verify_run(path)["status"] == "verified"
+    recipients_at_2 = {
+        p["agent_id"] for p in fake.prompts
+        if p["step"] == 2 and p["information_signals"]["received_claims"]
+    }
+    assert recipients_at_2
+    for prompt in fake.prompts:
+        if prompt["agent_id"] in recipients_at_2 and prompt["step"] >= 3:
+            assert not prompt["information_signals"]["received_claims"]
+            assert not prompt["episodic_memory"]
