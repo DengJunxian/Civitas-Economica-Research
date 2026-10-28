@@ -11,15 +11,37 @@ import json
 from pathlib import Path
 
 import pandas as pd
+import yaml
 
+from core.experiments.config import ExperimentConfig
 from research.civitas_agent.benchmark import summarize
 from research.civitas_agent.matrix import build_plan, run_rule_controls
 
 
-def run(root: Path, seed: int = 41) -> dict:
+def run(root: Path, seed: int = 41, *, full_size: bool = False) -> dict:
     if root.exists():
         raise ValueError("Offline demo requires a new output directory")
-    template = Path(__file__).resolve().parents[1] / "examples/experiments/scientific_s5_m1_s1.yaml"
+    original = Path(__file__).resolve().parents[1] / "examples/experiments/scientific_s5_m1_s1.yaml"
+    if full_size:
+        template = original
+    else:
+        # A deliberately tiny execution probe rather than a performance test.
+        # The full 64x100 experiment is a separate explicit local choice.
+        payload = yaml.safe_load(original.read_text(encoding="utf-8"))
+        payload["name"] = "s6_offline_smoke_template"
+        payload["n_agents"] = 12
+        payload["steps"] = 8
+        payload["cognitive"]["decision_interval"] = 2
+        payload["scientific_world"]["shocks"][0]["step"] = 3
+        payload["scientific_world"]["shocks"][0]["reveal_step"] = 6
+        payload["llm"]["max_calls"] = 100
+        config = ExperimentConfig.model_validate(payload)
+        root.mkdir(parents=True, exist_ok=False)
+        template = root / "pilot_template.yaml"
+        template.write_text(
+            yaml.safe_dump(config.model_dump(mode="json"), sort_keys=False),
+            encoding="utf-8",
+        )
     plan_dir = root / "plan"
     build_plan(
         template, plan_dir,
@@ -68,8 +90,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path("outputs/s6-offline-ci"))
     parser.add_argument("--seed", type=int, default=41)
+    parser.add_argument("--full-size", action="store_true",
+                        help="Explicitly run larger 64-agent, 100-step offline controls")
     args = parser.parse_args()
-    print(json.dumps(run(args.output, args.seed), indent=2))
+    print(json.dumps(run(args.output, args.seed, full_size=args.full_size), indent=2))
 
 
 if __name__ == "__main__":
