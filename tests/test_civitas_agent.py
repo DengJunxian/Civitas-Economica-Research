@@ -156,3 +156,27 @@ def test_strict_intent_rejects_type_confusion():
         _strict_intent('{"action":"BUY","fraction":true,"aggressiveness_ticks":0}')
     with pytest.raises(ValueError):
         _strict_intent('{"action":"SELL","fraction":0.5,"aggressiveness_ticks":2.0}')
+
+
+def test_offline_analyzer_builds_paired_tables(tmp_path):
+    from research.civitas_agent.analysis import analyze
+
+    for memory, social in [(False, False), (True, False), (False, True), (True, True)]:
+        run_with_fake(tmp_path, config(memory, social))
+    result = analyze(tmp_path, tmp_path / "analysis", bootstrap=100)
+    assert result["run_count"] == 4 and result["complete_worlds"] == 1
+    import pandas as pd
+    per_run = pd.read_csv(tmp_path / "analysis" / "per_run.csv")
+    effect = pd.read_csv(tmp_path / "analysis" / "effect_summary.csv")
+    assert set(per_run.arm) == {"M0S0", "M1S0", "M0S1", "M1S1"}
+    assert len(effect) == 21
+    assert set(effect.inferential_status) == {"descriptive_only"}
+    assert (tmp_path / "analysis" / "analysis_manifest.json").exists()
+
+
+def test_offline_analyzer_refuses_incomplete_factorial(tmp_path):
+    from research.civitas_agent.analysis import analyze
+
+    run_with_fake(tmp_path, config(False, False))
+    with pytest.raises(ValueError, match="Incomplete factorial"):
+        analyze(tmp_path, tmp_path / "analysis", bootstrap=100)
