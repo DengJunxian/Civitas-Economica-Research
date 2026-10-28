@@ -136,19 +136,28 @@ def verify_run(run_dir: str | Path) -> dict:
         if len(verdicts) != len(cfg.scientific_world.shocks):
             inconsistent.append("scientific.verification_count")
         observations = _records("cognitive_observations.jsonl")
+        prior_seen_by_agent: dict[str, int] = {}
         for row in observations:
+            aid, step = row["agent_id"], int(row["step"])
+            previous = prior_seen_by_agent.get(aid, 0)
             signals = row.get("information_signals", {})
-            if (set(signals) != {
-                "received_claims", "public_verifications",
-                "observed_source_track_records",
-            } or any(item["received_step"] > row["step"]
-                     for item in signals.get("received_claims", []))
-                    or any(item["reveal_step"] > row["step"]
-                           for item in signals.get("public_verifications", []))
+            claims = signals.get("received_claims", [])
+            verdicts = signals.get("public_verifications", [])
+            if (step <= previous
+                    or set(signals) != {
+                        "received_claims", "public_verifications",
+                        "observed_source_track_records",
+                    }
+                    or any(not previous < item["received_step"] <= step
+                           for item in claims)
+                    or any(not previous < item["reveal_step"] <= step
+                           for item in verdicts)
                     or "fundamental_value" in signals
-                    or "truthful" in json.dumps(signals)):
+                    or "truthful" in json.dumps(signals)
+                    or (not cfg.cognitive.memory_enabled and row.get("episodic_memory"))):
                 inconsistent.append("scientific.observation_as_of")
                 break
+            prior_seen_by_agent[aid] = step
     if manifest.get("parent_run_id"):
         report = json.loads((root / "reproduction.json").read_text(encoding="utf-8"))
         if report["original"]["run_id"] != manifest["parent_run_id"] or report["rerun_identity"]["run_id"] != manifest["run_id"]:
