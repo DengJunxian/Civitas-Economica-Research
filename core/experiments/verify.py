@@ -36,6 +36,12 @@ def verify_run(run_dir: str | Path) -> dict:
         required.add("requirements-lock.txt")
     if manifest["config"].get("historical_input"):
         required.add("input_snapshot.csv")
+    if manifest["config"].get("decision_mode") == "cognitive_llm":
+        required.update({
+            "cognitive_observations.jsonl", "cognitive_decisions.jsonl",
+            "cognitive_outcomes.jsonl", "cognitive_social_messages.jsonl",
+            "cognitive_reflections.jsonl", "cognitive_protocol.json",
+        })
     if manifest.get("parent_run_id"):
         required.add("reproduction.json")
     errors = sorted(required - set(manifest["artifacts"]))
@@ -61,7 +67,7 @@ def verify_run(run_dir: str | Path) -> dict:
     expected = ExperimentManifest.build(module="market_experiment", seed=cfg.seed,
         dataset_snapshot_id=snapshot_hash, config=identity_config,
         feature_flags=manifest["feature_flags"], data_slice=manifest["data_slice"],
-        model_version=cfg.llm.model if cfg.decision_mode == "llm" else cfg.decision_mode)
+        model_version=cfg.llm.model if cfg.decision_mode in {"llm", "cognitive_llm"} else cfg.decision_mode)
     fields = ("module", "seed", "config", "config_hash", "dataset_snapshot_id", "data_snapshot_hash",
               "parameter_set_id", "experiment_id", "model_version")
     inconsistent = [field for field in fields if manifest[field] != getattr(expected, field)]
@@ -124,7 +130,7 @@ def reproduce_run(run_dir: str | Path, output_root: str | Path) -> dict:
     verify_run(run_dir)
     root = Path(run_dir).resolve()
     payload = json.loads((root / "config.json").read_text(encoding="utf-8"))
-    if payload["decision_mode"] == "llm":
+    if payload["decision_mode"] in {"llm", "cognitive_llm"}:
         raise ValueError("Live LLM reruns require a new explicit run; they are not deterministic replays")
     original = _identity(root)
     original["manifest_sha256"] = _sha256(_manifest_path(root))

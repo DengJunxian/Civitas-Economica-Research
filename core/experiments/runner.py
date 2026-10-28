@@ -44,7 +44,7 @@ def write_json(path: Path, payload: Any) -> None:
 
 def source_fingerprint() -> dict[str, Any]:
     paths = list(PROJECT_ROOT.glob("*.py")) + list(PROJECT_ROOT.glob("config.*"))
-    for directory in ("agents", "core", "engine", "policy", "data_flywheel"):
+    for directory in ("agents", "core", "engine", "policy", "data_flywheel", "research"):
         paths.extend((PROJECT_ROOT / directory).rglob("*.py"))
     paths.extend((PROJECT_ROOT / "core/exchange/c_core").glob("*"))
     paths.extend((PROJECT_ROOT / "data").glob("market_composition.*"))
@@ -165,6 +165,16 @@ class ExperimentRunner:
                  "social_profiles": [asdict(node) for node in self.social.agents.values()]}
         write_json(output / "population.json", profiles)
         write_json(output / "world.json", world)
+        if cfg.decision_mode == "cognitive_llm":
+            from research.civitas_agent import CognitiveProtocol
+            adjacency = {
+                aid: [self.ids[j] for j in sorted(self.social.get_neighbors(i))]
+                for i, aid in enumerate(self.ids)
+            }
+            self.cognitive_protocol = CognitiveProtocol(
+                config=cfg.cognitive, agent_ids=self.ids, neighbors=adjacency,
+                seed=cfg.seed, initial_price=self.price, total_steps=cfg.steps,
+            )
         return {"world": world, "population": profiles}
 
     async def _decisions(self, step: int):
@@ -189,6 +199,27 @@ class ExperimentRunner:
             from core.llm.router import LLMRouter
             from core.llm.config import LLMSettings
             self.llm_router = LLMRouter(settings=LLMSettings(max_retries=cfg.llm.max_retries, timeout_seconds=cfg.llm.timeout), allow_offline_fallback=False)
+        if cfg.decision_mode == "cognitive_llm":
+            base = self.population.generate_tier2_decisions(self.price)
+            market = {
+                "price": float(self.price),
+                "best_bid": float(self.book.get_best_bid() or 0.0),
+                "best_ask": float(self.book.get_best_ask() or 0.0),
+                "depth": self.book.get_depth(5),
+            }
+            actions, quantities, prices = await self.cognitive_protocol.decide(
+                step=step, router=self.llm_router, personas=self.personas,
+                accounts=self.clearing.accounts, clearing=self.clearing,
+                market=market, rules=cfg.market,
+                prev_close=float(self.book.market_rules.prev_close),
+                llm=cfg.llm, base_actions=base[0], base_quantities=base[1],
+                base_prices=base[2], agent_ids=self.ids,
+            )
+            return (
+                np.asarray(actions, dtype=int),
+                np.asarray(quantities, dtype=int),
+                np.asarray(prices, dtype=float),
+            )
         actions, quantities, prices = [], [], []
         for aid, persona in zip(self.ids, self.personas):
             payload = {"step": step, "price": self.price, "persona": persona.to_dict(),
@@ -232,11 +263,11 @@ class ExperimentRunner:
         manifest = ExperimentManifest.build(module="market_experiment", seed=cfg.seed,
             dataset_snapshot_id="initializing", config=cfg.model_dump(mode="json"), run_id=run_id,
             parent_run_id=self.parent_run_id,
-            model_version=cfg.llm.model if cfg.decision_mode == "llm" else cfg.decision_mode,
+            model_version=cfg.llm.model if cfg.decision_mode in {"llm", "cognitive_llm"} else cfg.decision_mode,
             notes={"status": "running", "output": str(output), "schema_version": 1,
                    "archive_schema_version": 2,
                    "output_origin": "mock" if cfg.decision_mode == "mock" else "simulation",
-                   "determinism": "external_model_nondeterministic" if cfg.decision_mode == "llm" else "seeded_local_rules"})
+                   "determinism": "external_model_nondeterministic" if cfg.decision_mode in {"llm", "cognitive_llm"} else "seeded_local_rules"})
         write_experiment_manifest(manifest, output)
         write_json(output / "config.json", cfg.model_dump(mode="json"))
         sinks: dict[str, CsvSink] = {}
@@ -245,7 +276,7 @@ class ExperimentRunner:
             source = source_fingerprint()
             write_json(output / "source.json", source)
             packages = ["numpy", "pandas", "networkx", "pydantic", "pyyaml"]
-            if cfg.decision_mode == "llm":
+            if cfg.decision_mode in {"llm", "cognitive_llm"}:
                 packages.extend(["openai", "httpx"])
             versions = {p: importlib.metadata.version(p) for p in packages}
             installed = dict(sorted((d.metadata["Name"], d.version)
@@ -331,6 +362,13 @@ class ExperimentRunner:
                     self.previous_price = self.price
                     self.price = self.book.last_price
                     self.clearing.check_invariants()
+                    if cfg.decision_mode == "cognitive_llm":
+                        await self.cognitive_protocol.after_step(
+                            step=step, agent_ids=self.ids, actions=actions,
+                            quantities=quantities, trades=trades,
+                            accounts=self.clearing.accounts, price=self.price,
+                            router=self.llm_router, llm=cfg.llm,
+                        )
                     tape = [asdict(t) for t in trades]
                     snapshot = {"last_price": self.price, "best_bid": self.book.get_best_bid(),
                                 "best_ask": self.book.get_best_ask(), "depth": self.book.get_depth(5)}
@@ -371,6 +409,8 @@ class ExperimentRunner:
                         writer.writerow(row)
             calls = self.llm_router.get_call_records() if self.llm_router else []
             write_json(output / "model_calls.json", calls)
+            if hasattr(self, "cognitive_protocol"):
+                self.cognitive_protocol.write_artifacts(output)
             manifest.notes.update(completed_steps=completed, ended_at=utc_now_iso())
             summary = {"run_id": run_id, "experiment_id": manifest.experiment_id, **manifest.notes,
                        "trade_count": self.book.trade_count if hasattr(self, "book") else 0,
