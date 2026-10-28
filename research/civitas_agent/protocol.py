@@ -77,7 +77,7 @@ class CognitiveProtocol:
         self.logical_calls = 0
 
     def _social_context(self, agent_id: str, step: int) -> list[dict[str, Any]]:
-        if not self.config.social_enabled:
+        if not self.config.social_enabled or self.config.social_mode not in {"intent", "both"}:
             return []
         adjacent = self.neighbors.get(agent_id, set())
         rows = [
@@ -90,9 +90,10 @@ class CognitiveProtocol:
     def _observation(
         self, *, step: int, agent_id: str, persona: Any, account: Any,
         available: tuple[float, int], market: dict[str, Any],
+        scientific_world: Any | None = None,
     ) -> dict[str, Any]:
         memory = self.memory[agent_id][-self.config.memory_limit:] if self.config.memory_enabled else []
-        return {
+        observation = {
             "step": step,
             "agent_id": agent_id,
             "persona": persona.to_dict(),
@@ -105,9 +106,14 @@ class CognitiveProtocol:
             "price_history": self.price_history[-self.config.history_window:],
             "episodic_memory": memory,
             "neighbor_intentions": self._social_context(agent_id, step),
-            "protocol": {"memory_enabled": self.config.memory_enabled,
-                         "social_enabled": self.config.social_enabled},
         }
+        # Treatment flags must not be disclosed to the model: doing so can
+        # confound comparisons even when the factual inputs are the same.
+        if scientific_world is not None:
+            observation["information_signals"] = scientific_world.observation_for(
+                agent_id, step
+            )
+        return observation
 
     @staticmethod
     def _convert_intent(
@@ -141,7 +147,7 @@ class CognitiveProtocol:
         self, *, step: int, router: Any, personas: list[Any], accounts: Mapping[str, Any],
         clearing: Any, market: dict[str, Any], rules: Any, prev_close: float, llm: Any,
         base_actions: Any, base_quantities: Any, base_prices: Any,
-        agent_ids: list[str],
+        agent_ids: list[str], scientific_world: Any | None = None,
     ) -> tuple[list[int], list[int], list[float]]:
         actions = [int(x) for x in base_actions]
         quantities = [int(x) for x in base_quantities]
@@ -157,6 +163,7 @@ class CognitiveProtocol:
             obs = self._observation(
                 step=step, agent_id=aid, persona=personas[i], account=accounts[aid],
                 available=clearing.available(aid), market=market,
+                scientific_world=scientific_world,
             )
             self.observations.append(obs)
             if self.logical_calls >= llm.max_calls:
@@ -190,7 +197,7 @@ class CognitiveProtocol:
     async def after_step(
         self, *, step: int, agent_ids: list[str], actions: Any, quantities: Any,
         trades: list[Any], accounts: Mapping[str, Any], price: float,
-        router: Any, llm: Any,
+        router: Any, llm: Any, scientific_world: Any | None = None,
     ) -> None:
         # Every emitted message is labeled as *intent*, not a filled order.
         broadcasts = [
@@ -205,6 +212,22 @@ class CognitiveProtocol:
             if msg["step"] >= step - self.config.social_window + 1
         ]
         self.price_history.append(float(price))
+        if scientific_world is not None and self.config.memory_enabled:
+            # Truth is added only at public verification time, never before.
+            evidence = [
+                row for row in scientific_world.revelations
+                if row["reveal_step"] == step
+            ]
+            for aid in self.active_ids:
+                for row in evidence:
+                    self.memory[aid].append({
+                        "step": step,
+                        "event": "public_verification",
+                        "shock_id": row["shock_id"],
+                        "source_id": row["source_id"],
+                        "verdict": row["verdict"],
+                    })
+                self.memory[aid] = self.memory[aid][-self.config.memory_limit:]
         due = (step - 1) % self.config.decision_interval == 0
         if due:
             for i, aid in enumerate(agent_ids):
