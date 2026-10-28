@@ -139,7 +139,7 @@ def test_end_to_end_validates_both_truth_cases_and_no_market_price_override(tmp_
         assert len(read_jsonl(path / "study_news_verifications.jsonl")) == 1
         assert len(read_jsonl(path / "study_news_exposures.jsonl")) > 0
         assert len(read_jsonl(path / "cognitive_observations.jsonl")) == 18
-        assert len(read_jsonl(path / "model_calls.json")) == 18
+        assert len(json.loads((path / "model_calls.json").read_text())) == 18
         metrics = pd.read_csv(path / "metrics.csv")
         fundamentals = pd.read_csv(path / "study_fundamentals.csv")
         assert len(metrics) == len(fundamentals) == 6
