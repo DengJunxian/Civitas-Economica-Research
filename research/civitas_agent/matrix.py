@@ -205,8 +205,13 @@ def build_plan(
     return result
 
 
-def run_rule_controls(plan_dir: Path, destination: Path, *, partition: str) -> list[str]:
+def run_rule_controls(
+    plan_dir: Path, destination: Path, *, partition: str,
+    unlock_heldout: bool = False,
+) -> list[str]:
     """Run **only** offline deterministic controls; never instantiate a model."""
+    if partition == "heldout_worlds" and not unlock_heldout:
+        raise ValueError("Do not execute held-out worlds before explicit final evaluation")
     from core.experiments.runner import ExperimentRunner
     from core.experiments.verify import verify_run
 
