@@ -176,6 +176,12 @@ Locally this identical test is run with:
 python -m scripts.run_s6_offline_pilot --output outputs/s6-offline-ci
 ```
 
+The default CI fixture uses **12 investors and 8 steps**, with the shock
+publication/reveal steps adjusted in its archived `pilot_template.yaml`.
+This is intentionally small so the engineering check remains bounded. For
+a larger **offline-only** local exercise, explicitly add `--full-size`
+(which uses the 64-investor, 100-step example and still makes no API calls).
+
 The pilot produces `offline_pilot_summary.json`,
 `analysis/baseline_per_run.csv`, `analysis/paired_baseline_contrasts.csv`,
 and three complete market-transaction/Agent research archives.
