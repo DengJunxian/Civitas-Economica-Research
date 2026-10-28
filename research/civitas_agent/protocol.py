@@ -61,6 +61,7 @@ class CognitiveProtocol:
         total_steps: int,
     ) -> None:
         self.total_steps = int(total_steps)
+        self.seed = int(seed)
         self.config = config
         cohort_size = max(1, math.ceil(len(agent_ids) * config.llm_share))
         self.active_ids = sorted(random.Random(seed ^ 0xC1A57A).sample(agent_ids, cohort_size))
@@ -76,6 +77,7 @@ class CognitiveProtocol:
         self.reflections: list[dict[str, Any]] = []
         self.latest_information_inbox: dict[str, dict[str, Any]] = {}
         self.logical_calls = 0
+        self.rule_decisions = 0
 
     def _social_context(self, agent_id: str, step: int) -> list[dict[str, Any]]:
         if not self.config.social_enabled or self.config.social_mode not in {"intent", "both"}:
@@ -167,17 +169,28 @@ class CognitiveProtocol:
                 scientific_world=scientific_world,
             )
             self.observations.append(obs)
-            if self.logical_calls >= llm.max_calls:
-                raise RuntimeError("Cognitive LLM logical call budget exceeded")
-            self.logical_calls += 1
-            response = await router.complete(
-                [{"role": "system", "content": SYSTEM_PROMPT},
-                 {"role": "user", "content": json.dumps(obs, sort_keys=True, ensure_ascii=False)}],
-                mode=llm.provider, model=llm.model, temperature=llm.temperature,
-                timeout=llm.timeout, max_tokens=160, json_mode=True,
-                allow_provider_fallback=False,
-            )
-            action, fraction, ticks = _strict_intent(response.text)
+            if self.config.decision_policy == "llm":
+                if self.logical_calls >= llm.max_calls:
+                    raise RuntimeError("Cognitive LLM logical call budget exceeded")
+                self.logical_calls += 1
+                response = await router.complete(
+                    [{"role": "system", "content": SYSTEM_PROMPT},
+                     {"role": "user", "content": json.dumps(
+                         obs, sort_keys=True, ensure_ascii=False
+                     )}],
+                    mode=llm.provider, model=llm.model,
+                    temperature=llm.temperature,
+                    timeout=llm.timeout, max_tokens=160, json_mode=True,
+                    allow_provider_fallback=False,
+                )
+                raw = response.text
+            else:
+                from research.civitas_agent.baselines import deterministic_intent
+                raw = json.dumps(deterministic_intent(
+                    self.config.decision_policy, obs, seed=self.seed,
+                ), allow_nan=False)
+                self.rule_decisions += 1
+            action, fraction, ticks = _strict_intent(raw)
             action, quantity, limit = self._convert_intent(
                 action=action, fraction=fraction, ticks=ticks,
                 available=clearing.available(aid),
@@ -192,6 +205,7 @@ class CognitiveProtocol:
                 "step": step, "agent_id": aid, "action": action, "quantity": quantity,
                 "limit_price": limit, "fraction": fraction,
                 "aggressiveness_ticks": ticks,
+                "decision_policy": self.config.decision_policy,
                 "observation_sha256": hashlib.sha256(
                     json.dumps(obs, sort_keys=True, ensure_ascii=False).encode("utf-8")
                 ).hexdigest(),
@@ -293,6 +307,8 @@ class CognitiveProtocol:
                 "active_llm_agent_ids": self.active_ids,
                 "cognitive_config": self.config.model_dump(mode="json"),
                 "logical_model_calls": self.logical_calls,
+                "deterministic_rule_decisions": self.rule_decisions,
+                "decision_policy": self.config.decision_policy,
                 "social_message_semantics": "prior_step_intent_broadcast",
                 "memory_write_semantics": "post_settlement_only",
             }, sort_keys=True, indent=2) + "\n", encoding="utf-8",
