@@ -162,6 +162,27 @@ hypothesis is automatically accepted by this tool.
 Held-out synthetic worlds require `--unlock-heldout` to read scores.
 Never access held-out results while tuning the model and simulation settings.
 
+### CI-backed one-world engineering demonstration (zero API usage)
+
+The repository's `offline-engineering-tests` GitHub Actions workflow now
+contains one `s6-offline-controls` job. It creates a fresh frozen plan,
+runs three **deterministic** cognitive baselines with the actual order book
+and account settlement, verifies each archived world, and produces a small
+paired-market analysis. The CI job uploads `outputs/s6-offline-ci/`.
+
+Locally this identical test is run with:
+
+```bash
+python -m scripts.run_s6_offline_pilot --output outputs/s6-offline-ci
+```
+
+The pilot produces `offline_pilot_summary.json`,
+`analysis/baseline_per_run.csv`, `analysis/paired_baseline_contrasts.csv`,
+and three complete market-transaction/Agent research archives.
+`model_calls` must equal **0**. Any failing liquidity gate is deliberately
+reported instead of silently smoothing the price path or injecting fake trades.
+**One seed is not a hypothesis test or empirical market validation.**
+
 ## 5. Read-only external market-data reference validator
 
 A separate CLI accepts **user-supplied, frozen, source-documented** CSV with
