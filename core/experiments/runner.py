@@ -9,6 +9,7 @@ import importlib.util
 import json
 import math
 import platform
+import random
 import subprocess
 import traceback
 import uuid
@@ -163,8 +164,6 @@ class ExperimentRunner:
                  "input": input_info, "market_rules": rules.to_dict(),
                  "social_edges": sorted([list(edge) for edge in self.social.graph.edges()]),
                  "social_profiles": [asdict(node) for node in self.social.agents.values()]}
-        write_json(output / "population.json", profiles)
-        write_json(output / "world.json", world)
         if cfg.decision_mode == "cognitive_llm":
             from research.civitas_agent import CognitiveProtocol
             adjacency = {
@@ -175,6 +174,26 @@ class ExperimentRunner:
                 config=cfg.cognitive, agent_ids=self.ids, neighbors=adjacency,
                 seed=cfg.seed, initial_price=self.price, total_steps=cfg.steps,
             )
+            if cfg.scientific_world.enabled:
+                from research.civitas_agent.scientific_world import SyntheticInformationWorld
+                self.scientific_world = SyntheticInformationWorld(
+                    config=cfg.scientific_world,
+                    seed=cfg.seed,
+                    initial_price=self.price,
+                    active_ids=self.cognitive_protocol.active_ids,
+                    neighbors=adjacency,
+                    social_enabled=cfg.cognitive.social_enabled,
+                    social_mode=cfg.cognitive.social_mode,
+                    total_steps=cfg.steps,
+                )
+                world["scientific_world"] = {
+                    "enabled": True,
+                    "source_type": "synthetic_controlled",
+                    "truth_is_agent_private": True,
+                    "latent_value_used_for_matching": False,
+                }
+        write_json(output / "population.json", profiles)
+        write_json(output / "world.json", world)
         return {"world": world, "population": profiles}
 
     async def _decisions(self, step: int):
@@ -214,6 +233,7 @@ class ExperimentRunner:
                 prev_close=float(self.book.market_rules.prev_close),
                 llm=cfg.llm, base_actions=base[0], base_quantities=base[1],
                 base_prices=base[2], agent_ids=self.ids,
+                scientific_world=getattr(self, "scientific_world", None),
             )
             return (
                 np.asarray(actions, dtype=int),
@@ -315,6 +335,8 @@ class ExperimentRunner:
                     if step > 1 and (step - 1) % cfg.market.steps_per_day == 0:
                         self.clearing.new_day()
                         self.book.update_prev_close(self.price)
+                    if hasattr(self, "scientific_world"):
+                        self.scientific_world.advance(step)
                     for order in self.clearing.active_orders():
                         if step - self.order_steps[order.order_id] >= cfg.market.order_ttl:
                             self.clearing.cancel(order.order_id)
@@ -348,17 +370,36 @@ class ExperimentRunner:
                     actions, quantities, prices = await self._decisions(step)
                     if any(np.shape(v) != (cfg.n_agents,) for v in (actions, quantities, prices)) or not np.isin(actions, [-1, 0, 1]).all() or not np.isfinite(prices).all() or not np.isfinite(quantities).all() or (quantities < 0).any() or (quantities != np.floor(quantities)).any() or (prices <= 0).any():
                         raise ValueError("Decision batch violates agent-market contract")
-                    trades = []
+                    # Decision CSV retains canonical agent order. Only order
+                    # arrival (not perception or LLM scheduling) is shuffled.
                     for i, (action, qty, price) in enumerate(zip(actions, quantities, prices)):
-                        sinks["decisions"].add({"step": step, "agent_id": self.ids[i], "action": int(action),
-                            "quantity": int(qty), "price": float(price), "source": cfg.decision_mode})
+                        sinks["decisions"].add({"step": step, "agent_id": self.ids[i],
+                            "action": int(action), "quantity": int(qty),
+                            "price": float(price), "source": cfg.decision_mode})
+                    submission_indices = list(range(cfg.n_agents))
+                    if (cfg.decision_mode == "cognitive_llm"
+                            and cfg.cognitive.order_schedule == "seeded_per_step"):
+                        random.Random(
+                            f"{cfg.seed}|order_arrival_v1|{step}"
+                        ).shuffle(submission_indices)
+                    if hasattr(self, "scientific_world"):
+                        self.scientific_world.add_order_schedule(
+                            step, [self.ids[i] for i in submission_indices]
+                        )
+                    trades = []
+                    for i in submission_indices:
+                        action, qty, price = actions[i], quantities[i], prices[i]
                         if action == 0 or qty <= 0 or self.halted:
                             continue
-                        order = Order(cfg.market.symbol, float(price), int(qty), OrderSide.BUY if action == 1 else OrderSide.SELL,
-                            OrderType.LIMIT, self.ids[i], float(step), order_id=f"s{step:08d}-a{i:06d}")
+                        order = Order(cfg.market.symbol, float(price), int(qty),
+                            OrderSide.BUY if action == 1 else OrderSide.SELL,
+                            OrderType.LIMIT, self.ids[i], float(step),
+                            order_id=f"s{step:08d}-a{i:06d}")
                         self.order_steps[order.order_id] = step
                         trades.extend(self.clearing.submit(order))
-                        sinks["order_events"].add({"step": step, "order_id": order.order_id, "event": order.status.value, "reason": order.reason})
+                        sinks["order_events"].add({"step": step,
+                            "order_id": order.order_id, "event": order.status.value,
+                            "reason": order.reason})
                     self.previous_price = self.price
                     self.price = self.book.last_price
                     self.clearing.check_invariants()
@@ -368,6 +409,7 @@ class ExperimentRunner:
                             quantities=quantities, trades=trades,
                             accounts=self.clearing.accounts, price=self.price,
                             router=self.llm_router, llm=cfg.llm,
+                            scientific_world=getattr(self, "scientific_world", None),
                         )
                     tape = [asdict(t) for t in trades]
                     snapshot = {"last_price": self.price, "best_bid": self.book.get_best_bid(),
@@ -376,6 +418,21 @@ class ExperimentRunner:
                         "volume": sum(t.quantity for t in trades), "halted": self.halted,
                         "fees_cumulative": self.clearing.fees, "infected": social_stats["infected"],
                         **MarketMetrics.compute(snapshot=snapshot, trade_tape=tape)}
+                    if hasattr(self, "scientific_world"):
+                        metrics.update(self.scientific_world.market_metrics(
+                            step=step, price=self.price
+                        ))
+                        # A missing quote is *not* evidence of a zero spread.
+                        quoted = bool(
+                            snapshot["best_bid"] and snapshot["best_ask"]
+                            and snapshot["best_ask"] >= snapshot["best_bid"]
+                        )
+                        metrics.update(
+                            two_sided_quote_valid=int(quoted),
+                            spread_pct_when_quoted=(metrics["spread_pct"] if quoted else ""),
+                            no_trade=int(metrics["volume"] == 0),
+                            stale_price=int(abs(metrics["return"]) <= 1e-12),
+                        )
                     if "metrics" not in sinks:
                         sinks["metrics"] = CsvSink(output / "metrics.csv", list(metrics))
                         sinks["social"] = CsvSink(output / "social.csv", list(social_stats))
@@ -411,6 +468,8 @@ class ExperimentRunner:
             write_json(output / "model_calls.json", calls)
             if hasattr(self, "cognitive_protocol"):
                 self.cognitive_protocol.write_artifacts(output)
+            if hasattr(self, "scientific_world"):
+                self.scientific_world.write_artifacts(output)
             manifest.notes.update(completed_steps=completed, ended_at=utc_now_iso())
             summary = {"run_id": run_id, "experiment_id": manifest.experiment_id, **manifest.notes,
                        "trade_count": self.book.trade_count if hasattr(self, "book") else 0,
