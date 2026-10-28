@@ -87,8 +87,10 @@ def load_reference(spec: ReferenceSpec) -> pd.DataFrame:
     if parsed.isna().any():
         raise ValueError("Reference dates must not be missing")
     dates = pd.Series(parsed.dt.date, index=data.index)
-    if not dates.is_monotonic_increasing or dates.duplicated().any():
-        raise ValueError("Reference dates must be strictly increasing and unique")
+    if not parsed.is_monotonic_increasing or parsed.duplicated().any():
+        raise ValueError("Reference timestamps must be strictly increasing and unique")
+    if spec.frequency == "daily" and dates.duplicated().any():
+        raise ValueError("Daily reference bars must have unique calendar dates")
     close = pd.to_numeric(data["close"], errors="raise")
     volume = pd.to_numeric(data["volume"], errors="raise")
     values = pd.DataFrame({"date": dates, "close": close, "volume": volume})
