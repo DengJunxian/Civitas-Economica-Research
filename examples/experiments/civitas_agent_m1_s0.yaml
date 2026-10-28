@@ -1,0 +1,36 @@
+# CivitasAgent pilot m1_s0: paired factorial arm
+# Replace the model id and configure its API key before any live run.
+schema_version: 1
+name: civitas_agent_m1_s0
+mode: research
+seed: 20261028
+steps: 100
+n_agents: 64
+decision_mode: cognitive_llm
+market:
+  backend: python
+  initial_price: 3000.0
+  board_lot: 1
+  t_plus_one: false
+social:
+  topology: small_world
+  neighbors: 6
+  initial_infected: 0
+cognitive:
+  llm_share: 0.25
+  decision_interval: 10
+  memory_enabled: true
+  social_enabled: false
+  reflection_enabled: false
+  memory_limit: 20
+  social_window: 3
+  max_social_messages: 8
+  history_window: 10
+llm:
+  provider: deepseek
+  model: replace-with-supported-model
+  temperature: 0.0
+  timeout: 30.0
+  max_calls: 160
+  max_retries: 0
+events: []
