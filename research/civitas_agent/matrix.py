@@ -102,8 +102,8 @@ def build_plan(
         raise ValueError("S6 mechanism matrix needs at least one controlled shock")
     if base.llm.model.strip() == "":
         raise ValueError("Name a fixed LLM model in the S6 template")
-    if output.exists() and any(output.iterdir()):
-        raise ValueError("Study plan destination must be an empty/new directory")
+    if output.exists():
+        raise ValueError("Study plan destination must be a new directory")
 
     configs = []
     for arm in ARMS:
