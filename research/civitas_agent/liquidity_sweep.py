@@ -40,6 +40,10 @@ METRICS = (
     "total_volume",
     "order_rejection_share",
     "ttl_cancellation_share",
+    "buy_decision_share",
+    "sell_decision_share",
+    "requested_buy_quantity",
+    "requested_sell_quantity",
 )
 GATES = {
     "min_two_sided_quote_share": 0.10,
@@ -123,10 +127,31 @@ def diagnose(path: Path) -> dict[str, Any]:
         conditional_spread = float(np.mean(spreads))
     else:
         conditional_spread = None
+    decisions = pd.read_csv(path / "decisions.csv")
+    if not len(decisions) or not set(decisions.action.dropna().unique()).issubset({-1, 0, 1}):
+        raise ValueError("Malformed historical agent decision record")
+    buy_mask = decisions.action == 1
+    sell_mask = decisions.action == -1
+    hold_mask = decisions.action == 0
+    requested_buy = float(decisions.loc[buy_mask, "quantity"].sum())
+    requested_sell = float(decisions.loc[sell_mask, "quantity"].sum())
+    cohort_ids = set(json.loads((path / "cognitive_protocol.json").read_text())[
+        "active_llm_agent_ids"
+    ])
+    cohort = decisions.agent_id.isin(cohort_ids)
+    if not cohort.any() or not (~cohort).any():
+        raise ValueError("Diagnostic requires both cognitive and background cohorts")
     order_count = int(len(orders))
     if order_count <= 0:
         raise ValueError("Market has no actual submitted/rejected order records")
     rejected = int((orders["status"].astype(str) == "rejected").sum())
+    rej_rows = orders.loc[orders.status.astype(str) == "rejected"]
+    reject_reason = rej_rows.reason.fillna("").astype(str)
+    unlabelled_rejections = int((reject_reason == "").sum())
+    if unlabelled_rejections:
+        raise ValueError(
+            f"Research order audit found {unlabelled_rejections} unexplained rejected orders"
+        )
     ttl_cancel = int((
         (events["event"].astype(str) == "cancel")
         & (events["reason"].astype(str) == "time_to_live")
@@ -160,6 +185,24 @@ def diagnose(path: Path) -> dict[str, Any]:
         "total_volume": float(np.sum(volume)),
         "orders_recorded": order_count,
         "order_rejection_share": rejected / order_count,
+        "rejected_orders_price_outside_limit": int(
+            (reject_reason == "price outside limit").sum()
+        ),
+        "rejected_orders_insufficient_shares": int(
+            (reject_reason == "insufficient sellable unreserved shares").sum()
+        ),
+        "buy_decision_share": float(buy_mask.mean()),
+        "sell_decision_share": float(sell_mask.mean()),
+        "hold_decision_share": float(hold_mask.mean()),
+        "requested_buy_quantity": requested_buy,
+        "requested_sell_quantity": requested_sell,
+        "requested_buy_to_sell_ratio": (
+            requested_buy / requested_sell if requested_sell > 0 else None
+        ),
+        "cognitive_buy_decision_share": float(buy_mask[cohort].mean()),
+        "background_buy_decision_share": float(buy_mask[~cohort].mean()),
+        "cognitive_sell_decision_share": float(sell_mask[cohort].mean()),
+        "background_sell_decision_share": float(sell_mask[~cohort].mean()),
         "ttl_cancellation_share": ttl_cancel / order_count,
         "ttl_cancellation_count": ttl_cancel,
         "reported_llm_calls": len(json.loads((path / "model_calls.json").read_text())),
