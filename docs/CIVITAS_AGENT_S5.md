@@ -47,15 +47,21 @@ do not read these synthetic claims. Exposure coverage must be reported.
   personalized observation.
 - Every exposure record specifies the source, actual receiving Agent, time,
   channel (direct/social) and forwarding Agent for social deliveries.
-- `public_verifications` remains empty before `reveal_step`. Public
-  verification and source track records use only **already revealed**
-  verdicts. These are visible to everyone from the revelation step.
+- `public_verifications` remains empty before `reveal_step`. An
+  already-published verification enters each Agent's **unread bulletin inbox**
+  at its next cognitive decision and is acknowledged only if a valid decision
+  is produced. A bulletin is not automatically replayed at every later step.
+  Source track records in the input use only newly received public verdicts,
+  not researcher-private truth.
 - Ground truth and `V_t` live in the simulator and in researcher-side
   artifacts, **never** the Agent observation. The simulator does not create
   a pre-reveal insider feed or condition investor actions on `truthful`.
-- Post-settlement memory may incorporate **public** verifications after
-  their scheduled step. Memory and social treatment assignment flags are
-  not included in LLM prompts.
+- Post-settlement memory may incorporate **already-read claims and public
+  verifications** after the Agent actually observes them. The no-memory arm
+  has no automatic permanent public news archive. Unread messages remain in
+  an inbox until the next successful decision; the memory arm can later recall
+  acknowledged information. Memory and social treatment assignment flags
+  are not included in LLM prompts.
 - The baseline LLM decision budget, malformed-schema fail-close, no silent
   provider fallback, and account invariants remain enforced.
 
