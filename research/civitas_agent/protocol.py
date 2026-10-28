@@ -58,7 +58,9 @@ class CognitiveProtocol:
         neighbors: Mapping[str, list[str]],
         seed: int,
         initial_price: float,
+        total_steps: int,
     ) -> None:
+        self.total_steps = int(total_steps)
         self.config = config
         cohort_size = max(1, math.ceil(len(agent_ids) * config.llm_share))
         self.active_ids = sorted(random.Random(seed ^ 0xC1A57A).sample(agent_ids, cohort_size))
@@ -110,13 +112,13 @@ class CognitiveProtocol:
     @staticmethod
     def _convert_intent(
         *, action: int, fraction: float, ticks: int, available: tuple[float, int],
-        price: float, best_bid: float, best_ask: float, rules: Any,
+        price: float, best_bid: float, best_ask: float, rules: Any, prev_close: float,
     ) -> tuple[int, int, float]:
         tick = rules.tick_size
         anchor = (best_ask if action == 1 else best_bid) or price
         proposed = anchor + (ticks * tick if action == 1 else -ticks * tick)
-        lower = max(tick, rules.initial_price * (1.0 - rules.price_limit))
-        upper = rules.initial_price * (1.0 + rules.price_limit)
+        lower = max(tick, prev_close * (1.0 - rules.price_limit))
+        upper = prev_close * (1.0 + rules.price_limit)
         lower_tick = math.ceil(lower / tick - 1e-9)
         upper_tick = math.floor(upper / tick + 1e-9)
         if lower_tick > upper_tick:
@@ -137,7 +139,7 @@ class CognitiveProtocol:
 
     async def decide(
         self, *, step: int, router: Any, personas: list[Any], accounts: Mapping[str, Any],
-        clearing: Any, market: dict[str, Any], rules: Any, llm: Any,
+        clearing: Any, market: dict[str, Any], rules: Any, prev_close: float, llm: Any,
         base_actions: Any, base_quantities: Any, base_prices: Any,
         agent_ids: list[str],
     ) -> tuple[list[int], list[int], list[float]]:
@@ -172,7 +174,7 @@ class CognitiveProtocol:
                 action=action, fraction=fraction, ticks=ticks,
                 available=clearing.available(aid),
                 price=market["price"], best_bid=market["best_bid"],
-                best_ask=market["best_ask"], rules=rules,
+                best_ask=market["best_ask"], rules=rules, prev_close=prev_close,
             )
             actions[i], quantities[i], prices[i] = action, quantity, limit
             self.decisions.append({
@@ -228,7 +230,7 @@ class CognitiveProtocol:
                 self.memory[aid] = self.memory[aid][-self.config.memory_limit:]
         if not (self.config.memory_enabled and self.config.reflection_enabled):
             return
-        if step >= self.config.total_steps or step % self.config.reflection_interval:
+        if step >= self.total_steps or step % self.config.reflection_interval:
             return
         for aid in self.active_ids:
             if self.logical_calls >= llm.max_calls:
