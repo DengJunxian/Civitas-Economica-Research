@@ -74,6 +74,7 @@ class CognitiveProtocol:
         self.decisions: list[dict[str, Any]] = []
         self.outcomes: list[dict[str, Any]] = []
         self.reflections: list[dict[str, Any]] = []
+        self.latest_information_inbox: dict[str, dict[str, Any]] = {}
         self.logical_calls = 0
 
     def _social_context(self, agent_id: str, step: int) -> list[dict[str, Any]]:
@@ -184,6 +185,9 @@ class CognitiveProtocol:
                 best_ask=market["best_ask"], rules=rules, prev_close=prev_close,
             )
             actions[i], quantities[i], prices[i] = action, quantity, limit
+            if scientific_world is not None:
+                scientific_world.acknowledge_observation(aid, step)
+                self.latest_information_inbox[aid] = obs["information_signals"]
             self.decisions.append({
                 "step": step, "agent_id": aid, "action": action, "quantity": quantity,
                 "limit_price": limit, "fraction": fraction,
@@ -212,22 +216,6 @@ class CognitiveProtocol:
             if msg["step"] >= step - self.config.social_window + 1
         ]
         self.price_history.append(float(price))
-        if scientific_world is not None and self.config.memory_enabled:
-            # Truth is added only at public verification time, never before.
-            evidence = [
-                row for row in scientific_world.revelations
-                if row["reveal_step"] == step
-            ]
-            for aid in self.active_ids:
-                for row in evidence:
-                    self.memory[aid].append({
-                        "step": step,
-                        "event": "public_verification",
-                        "shock_id": row["shock_id"],
-                        "source_id": row["source_id"],
-                        "verdict": row["verdict"],
-                    })
-                self.memory[aid] = self.memory[aid][-self.config.memory_limit:]
         due = (step - 1) % self.config.decision_interval == 0
         if due:
             for i, aid in enumerate(agent_ids):
@@ -247,8 +235,22 @@ class CognitiveProtocol:
                     "marked_wealth": float(account.cash + account.shares * price),
                 }
                 self.outcomes.append(outcome)
+                inbox = self.latest_information_inbox.pop(aid, None)
                 if self.config.memory_enabled:
                     self.memory[aid].append(outcome)
+                    if inbox is not None:
+                        for claim in inbox["received_claims"]:
+                            self.memory[aid].append({
+                                "step": step, "event": "received_claim",
+                                "claim": dict(claim),
+                            })
+                        for verification in inbox["public_verifications"]:
+                            self.memory[aid].append({
+                                "step": step, "event": "public_verification",
+                                "shock_id": verification["shock_id"],
+                                "source_id": verification["source_id"],
+                                "verdict": verification["verdict"],
+                            })
                     self.memory[aid] = self.memory[aid][-self.config.memory_limit:]
         if not (self.config.memory_enabled and self.config.reflection_enabled):
             return
