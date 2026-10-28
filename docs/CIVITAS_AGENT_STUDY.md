@@ -133,3 +133,29 @@ Each run archives its own final model response metadata.
 
 Do not report the controlled test fixtures or the presence of model/market
 modules as evidence of the paper's behavioral or market-level hypotheses.
+
+## Offline paired-world analysis (inspectable preliminary evidence)
+
+After all four arms have completed at the same set of seeds, run:
+
+```bash
+python -m research.civitas_agent.analysis \
+  --runs outputs/experiments \
+  --output outputs/civitas_agent_analysis \
+  --bootstrap 1000
+```
+
+The analyzer verifies archived run hashes and matched configuration identity,
+rejects duplicate or incomplete arms, and exports `per_run.csv`,
+`paired_effects.csv`, `effect_summary.csv`, and `analysis_manifest.json`.
+The analysis estimates world-level paired contrasts and bootstrap confidence
+intervals. It flags no-trade or no-two-sided-quote worlds, never converts a
+missing spread into a true zero-spread observation, and does **not** use Agent
+steps as independent statistical replicates. With fewer than five independent
+worlds it labels intervals **descriptive_only**. These are exploratory
+diagnostics until an explicit study-level statistical plan and true market-data
+validation have been completed.
+
+For multiple configurations in a shared outputs folder, point `--runs` to
+a dedicated run root containing only the intended four paired arms, or the
+analyzer will refuse to combine scientifically incompatible configurations.
