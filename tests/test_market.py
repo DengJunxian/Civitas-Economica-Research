@@ -47,6 +47,22 @@ def test_invalid_orders_rejected(price, qty):
     assert b.get_depth() == {"bids": [], "asks": []}
 
 
+def test_invalid_limit_price_and_symbol_have_auditable_rejection_reasons():
+    b = book()
+    outside = make("outside", side="sell", price=89.99)
+    assert b.add_order(outside) == []
+    assert outside.status == OrderStatus.REJECTED
+    assert outside.reason == "price outside limit"
+    wrong = Order(
+        "WRONG", 100.0, 2, OrderSide.BUY, OrderType.LIMIT,
+        "agent_wrong", 1.0, order_id="wrong"
+    )
+    assert b.add_order(wrong) == []
+    assert wrong.status == OrderStatus.REJECTED
+    assert wrong.reason == "symbol mismatch"
+    assert b.get_depth() == {"bids": [], "asks": []}
+
+
 def test_duplicate_and_cancel_are_safe():
     b = book(); o = make("o")
     b.add_order(o)
