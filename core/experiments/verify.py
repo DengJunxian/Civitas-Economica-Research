@@ -62,7 +62,9 @@ def verify_run(run_dir: str | Path) -> dict:
     # File hashes alone do not establish that seed/config/snapshot identities agree.
     payload = json.loads((root / "config.json").read_text(encoding="utf-8"))
     cfg = ExperimentConfig.model_validate(payload)
-    identity_config = cfg.model_dump(mode="json")
+    # Check the *archived* expanded configuration rather than injecting
+    # defaults introduced by a newer code version into an old experiment ID.
+    identity_config = json.loads(json.dumps(payload))
     if cfg.historical_input:
         identity_config["historical_input"]["path"] = "input_snapshot.csv"
         if _sha256(root / "input_snapshot.csv") != cfg.historical_input.sha256:
