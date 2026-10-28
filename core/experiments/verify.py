@@ -42,6 +42,12 @@ def verify_run(run_dir: str | Path) -> dict:
             "cognitive_outcomes.jsonl", "cognitive_social_messages.jsonl",
             "cognitive_reflections.jsonl", "cognitive_protocol.json",
         })
+    if manifest["config"].get("scientific_world", {}).get("enabled"):
+        required.update({
+            "study_fundamentals.csv", "study_news_exposures.jsonl",
+            "study_news_verifications.jsonl", "study_order_schedule.jsonl",
+            "study_world_private.json",
+        })
     if manifest.get("parent_run_id"):
         required.add("reproduction.json")
     errors = sorted(required - set(manifest["artifacts"]))
@@ -101,6 +107,46 @@ def verify_run(run_dir: str | Path) -> dict:
         with (root / f"{name}.csv").open(newline="", encoding="utf-8") as file:
             if sum(1 for _ in csv.DictReader(file)) != expected_rows:
                 inconsistent.append(f"{name}.rows")
+    if cfg.scientific_world.enabled:
+        with (root / "study_fundamentals.csv").open(
+            newline="", encoding="utf-8"
+        ) as file:
+            rows = list(csv.DictReader(file))
+            if len(rows) != cfg.steps or [
+                int(row["step"]) for row in rows
+            ] != list(range(1, cfg.steps + 1)):
+                inconsistent.append("scientific.fundamental_steps")
+        def _records(filename):
+            return [
+                json.loads(line) for line in (root / filename).read_text(
+                    encoding="utf-8"
+                ).splitlines()
+            ]
+        schedules = _records("study_order_schedule.jsonl")
+        if len(schedules) != cfg.steps or any(
+            row["step"] != step or
+            len(row["ordered_agent_ids"]) != cfg.n_agents or
+            len(set(row["ordered_agent_ids"])) != cfg.n_agents
+            for step, row in enumerate(schedules, start=1)
+        ):
+            inconsistent.append("scientific.order_schedule")
+        verdicts = _records("study_news_verifications.jsonl")
+        if len(verdicts) != len(cfg.scientific_world.shocks):
+            inconsistent.append("scientific.verification_count")
+        observations = _records("cognitive_observations.jsonl")
+        for row in observations:
+            signals = row.get("information_signals", {})
+            if (set(signals) != {
+                "received_claims", "public_verifications",
+                "observed_source_track_records",
+            } or any(item["received_step"] > row["step"]
+                     for item in signals.get("received_claims", []))
+                    or any(item["reveal_step"] > row["step"]
+                           for item in signals.get("public_verifications", []))
+                    or "fundamental_value" in signals
+                    or "truthful" in json.dumps(signals)):
+                inconsistent.append("scientific.observation_as_of")
+                break
     if manifest.get("parent_run_id"):
         report = json.loads((root / "reproduction.json").read_text(encoding="utf-8"))
         if report["original"]["run_id"] != manifest["parent_run_id"] or report["rerun_identity"]["run_id"] != manifest["run_id"]:
