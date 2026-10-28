@@ -13,6 +13,25 @@ from core.reproducibility import stable_hash, utc_now_iso
 
 REPLAY_FILES = ("population.json", "world.json", "metrics.csv", "agents.csv", "trades.csv",
                 "orders.csv", "order_events.csv", "decisions.csv", "social.csv", "events.jsonl", "model_calls.json")
+COGNITIVE_FILES = (
+    "cognitive_observations.jsonl", "cognitive_decisions.jsonl",
+    "cognitive_outcomes.jsonl", "cognitive_social_messages.jsonl",
+    "cognitive_reflections.jsonl", "cognitive_protocol.json",
+)
+SCIENTIFIC_FILES = (
+    "study_fundamentals.csv", "study_news_exposures.jsonl",
+    "study_news_verifications.jsonl", "study_order_schedule.jsonl",
+    "study_world_private.json",
+)
+
+
+def _replay_files(config: dict) -> tuple[str, ...]:
+    files = REPLAY_FILES
+    if config.get("decision_mode") == "cognitive_rule":
+        files += COGNITIVE_FILES
+        if config.get("scientific_world", {}).get("enabled"):
+            files += SCIENTIFIC_FILES
+    return files
 
 
 def _sha256(path: Path) -> str:
@@ -36,18 +55,10 @@ def verify_run(run_dir: str | Path) -> dict:
         required.add("requirements-lock.txt")
     if manifest["config"].get("historical_input"):
         required.add("input_snapshot.csv")
-    if manifest["config"].get("decision_mode") == "cognitive_llm":
-        required.update({
-            "cognitive_observations.jsonl", "cognitive_decisions.jsonl",
-            "cognitive_outcomes.jsonl", "cognitive_social_messages.jsonl",
-            "cognitive_reflections.jsonl", "cognitive_protocol.json",
-        })
+    if manifest["config"].get("decision_mode") in {"cognitive_llm", "cognitive_rule"}:
+        required.update(COGNITIVE_FILES)
     if manifest["config"].get("scientific_world", {}).get("enabled"):
-        required.update({
-            "study_fundamentals.csv", "study_news_exposures.jsonl",
-            "study_news_verifications.jsonl", "study_order_schedule.jsonl",
-            "study_world_private.json",
-        })
+        required.update(SCIENTIFIC_FILES)
     if manifest.get("parent_run_id"):
         required.add("reproduction.json")
     errors = sorted(required - set(manifest["artifacts"]))
@@ -203,8 +214,9 @@ def reproduce_run(run_dir: str | Path, output_root: str | Path) -> dict:
                 "rerun_identity": _identity(runner.output_dir), "error_type": type(exc).__name__,
                 "comparisons": []})
         raise
+    result_files = _replay_files(payload)
     comparisons = [{"file": name, "original_sha256": _sha256(root / name),
-                    "rerun_sha256": _sha256(path / name)} for name in REPLAY_FILES]
+                    "rerun_sha256": _sha256(path / name)} for name in result_files]
     for item in comparisons:
         item["matched"] = item["original_sha256"] == item["rerun_sha256"]
     mismatches = [item["file"] for item in comparisons if not item["matched"]]
@@ -213,7 +225,7 @@ def reproduce_run(run_dir: str | Path, output_root: str | Path) -> dict:
     rerun_identity = _identity(path)
     report = {"schema_version": 1, "timestamp": utc_now_iso(),
               "status": "different" if mismatches else "matched", "original": original,
-              "rerun_identity": rerun_identity, "rerun": str(path), "compared_files": len(REPLAY_FILES),
+              "rerun_identity": rerun_identity, "rerun": str(path), "compared_files": len(result_files),
               "comparisons": comparisons, "mismatches": mismatches,
               "source_matches": original["source_hash"] == rerun_identity["source_hash"],
               "environment_differences": [key for key in ("python", "platform", "packages", "installed_packages", "backend")
@@ -221,6 +233,6 @@ def reproduce_run(run_dir: str | Path, output_root: str | Path) -> dict:
     report_path = _save_reproduction(path, report)
     if mismatches:
         raise ValueError(f"Reproduction differs in {mismatches}; report archived at {report_path}")
-    return {"status": "matched", "compared_files": len(REPLAY_FILES), "rerun": str(path),
+    return {"status": "matched", "compared_files": len(result_files), "rerun": str(path),
             "report": str(report_path), "source_matches": report["source_matches"],
             "environment_differences": report["environment_differences"]}
