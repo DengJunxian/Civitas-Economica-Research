@@ -79,6 +79,7 @@ class LLMConfig(Settings):
 class CognitiveConfig(Settings):
     """Controlled cognition study configuration, inactive in default runs."""
 
+    decision_policy: Literal["llm", "random", "profile_rule", "claim_rule"] = "llm"
     llm_share: float = Field(0.25, gt=0, le=1)
     decision_interval: int = Field(5, ge=1, strict=True)
     memory_enabled: bool = True
@@ -134,7 +135,7 @@ class ExperimentConfig(Settings):
     seed: int = Field(42, ge=0, lt=2**32, strict=True)
     steps: int = Field(30, ge=1, le=100000, strict=True)
     n_agents: int = Field(64, ge=2, le=100000, strict=True)
-    decision_mode: Literal["vectorized", "profile_heuristic", "llm", "cognitive_llm", "mock"] = "vectorized"
+    decision_mode: Literal["vectorized", "profile_heuristic", "llm", "cognitive_llm", "cognitive_rule", "mock"] = "vectorized"
     market_regime: str = "default"
     market: MarketConfig = Field(default_factory=MarketConfig)
     social: SocialConfig = Field(default_factory=SocialConfig)
@@ -153,8 +154,8 @@ class ExperimentConfig(Settings):
         if any(e.step > self.steps or (e.kind == "panic" and e.value > self.n_agents) for e in self.events):
             raise ValueError("event exceeds experiment step/population bounds")
         if self.scientific_world.enabled:
-            if self.decision_mode != "cognitive_llm":
-                raise ValueError("Scientific world requires cognitive_llm decision mode")
+            if self.decision_mode not in {"cognitive_llm", "cognitive_rule"}:
+                raise ValueError("Scientific world requires a cognitive decision mode")
             if self.historical_input is not None:
                 raise ValueError("Synthetic scientific world cannot use historical_input")
             if self.events:
@@ -163,11 +164,18 @@ class ExperimentConfig(Settings):
                 raise ValueError("Scientific news experiment requires social_mode=news or both")
             if any(shock.reveal_step > self.steps for shock in self.scientific_world.shocks):
                 raise ValueError("Scientific shock reveal_step exceeds experiment steps")
-        elif self.cognitive.social_mode in {"news", "both"} and self.decision_mode == "cognitive_llm":
+        elif self.cognitive.social_mode in {"news", "both"} and self.decision_mode in {"cognitive_llm", "cognitive_rule"}:
             raise ValueError("News social_mode requires scientific_world.enabled")
         if self.mode == "research" and (self.decision_mode == "mock" or
                 (self.historical_input and self.historical_input.origin != "historical")):
             raise ValueError("research mode does not accept Mock decisions or non-historical input snapshots")
+        if self.decision_mode in {"cognitive_llm", "cognitive_rule"}:
+            if self.decision_mode == "cognitive_llm" and self.cognitive.decision_policy != "llm":
+                raise ValueError("cognitive_llm requires cognitive.decision_policy=llm")
+            if self.decision_mode == "cognitive_rule" and self.cognitive.decision_policy == "llm":
+                raise ValueError("cognitive_rule requires a named deterministic decision_policy")
+            if self.decision_mode == "cognitive_rule" and self.cognitive.reflection_enabled:
+                raise ValueError("LLM reflection is unavailable for deterministic cognitive rules")
         if self.decision_mode in {"llm", "cognitive_llm"}:
             if self.cognitive.reflection_enabled and not self.cognitive.memory_enabled:
                 raise ValueError("Cognitive reflection requires memory_enabled=true")

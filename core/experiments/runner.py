@@ -164,7 +164,7 @@ class ExperimentRunner:
                  "input": input_info, "market_rules": rules.to_dict(),
                  "social_edges": sorted([list(edge) for edge in self.social.graph.edges()]),
                  "social_profiles": [asdict(node) for node in self.social.agents.values()]}
-        if cfg.decision_mode == "cognitive_llm":
+        if cfg.decision_mode in {"cognitive_llm", "cognitive_rule"}:
             from research.civitas_agent import CognitiveProtocol
             adjacency = {
                 aid: [self.ids[j] for j in sorted(self.social.get_neighbors(i))]
@@ -214,11 +214,11 @@ class ExperimentRunner:
             return (np.array([{"BUY": 1, "SELL": -1, "HOLD": 0}[a.action] for a in actions]),
                     np.array([int(a.amount) for a in actions]), np.array([a.target_price for a in actions]))
         # No LLM objects are instantiated in rule-based runs.
-        if self.llm_router is None:
+        if cfg.decision_mode != "cognitive_rule" and self.llm_router is None:
             from core.llm.router import LLMRouter
             from core.llm.config import LLMSettings
             self.llm_router = LLMRouter(settings=LLMSettings(max_retries=cfg.llm.max_retries, timeout_seconds=cfg.llm.timeout), allow_offline_fallback=False)
-        if cfg.decision_mode == "cognitive_llm":
+        if cfg.decision_mode in {"cognitive_llm", "cognitive_rule"}:
             base = self.population.generate_tier2_decisions(self.price)
             market = {
                 "price": float(self.price),
@@ -377,7 +377,7 @@ class ExperimentRunner:
                             "action": int(action), "quantity": int(qty),
                             "price": float(price), "source": cfg.decision_mode})
                     submission_indices = list(range(cfg.n_agents))
-                    if (cfg.decision_mode == "cognitive_llm"
+                    if (cfg.decision_mode in {"cognitive_llm", "cognitive_rule"}
                             and cfg.cognitive.order_schedule == "seeded_per_step"):
                         random.Random(
                             f"{cfg.seed}|order_arrival_v1|{step}"
@@ -403,7 +403,7 @@ class ExperimentRunner:
                     self.previous_price = self.price
                     self.price = self.book.last_price
                     self.clearing.check_invariants()
-                    if cfg.decision_mode == "cognitive_llm":
+                    if cfg.decision_mode in {"cognitive_llm", "cognitive_rule"}:
                         await self.cognitive_protocol.after_step(
                             step=step, agent_ids=self.ids, actions=actions,
                             quantities=quantities, trades=trades,
