@@ -37,3 +37,20 @@ jobs:
         with:
           name: tests-${{ matrix.python }}
           path: pytest.xml
+
+  s6-offline-controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-core.txt
+      # A controlled synthetic world with only deterministic baseline agents.
+      # No provider credentials, external market feeds, or paid API requests.
+      - run: python -m scripts.run_s6_offline_pilot --output outputs/s6-offline-ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: s6-offline-controls
+          path: outputs/s6-offline-ci/
